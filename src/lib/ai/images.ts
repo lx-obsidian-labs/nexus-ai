@@ -34,7 +34,7 @@ export async function generateImage(
     seed: options?.seed,
   }
 
-  const response = await fetch(`${NVIDIA_BASE_URL}/image/generation`, {
+  const response = await fetch(`${NVIDIA_BASE_URL}/images/generations`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
