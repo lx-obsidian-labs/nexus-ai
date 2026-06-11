@@ -8,19 +8,24 @@ function getAppUrl(): string {
 }
 
 export async function signUp(email: string, password: string, fullName?: string) {
-  const supabase = await createClient()
+  try {
+    const supabase = await createClient()
 
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: { full_name: fullName },
-      emailRedirectTo: `${getAppUrl()}/auth/callback`,
-    },
-  })
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: fullName },
+        emailRedirectTo: `${getAppUrl()}/auth/callback`,
+      },
+    })
 
-  if (error) throw error
-  revalidatePath("/", "layout")
+    if (error) return { error: error.message }
+    revalidatePath("/", "layout")
+    return { error: null }
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Unexpected error" }
+  }
 }
 
 export async function signIn(email: string, password: string) {

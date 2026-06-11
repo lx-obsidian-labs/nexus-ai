@@ -23,23 +23,22 @@ export default function SignupPage() {
     e.preventDefault()
     setLoading(true)
 
-    try {
-      await signUp(email, password, fullName)
+    const result = await signUp(email, password, fullName)
+    if (result.error) {
+      toast({
+        title: "Sign up failed",
+        description: result.error,
+        variant: "destructive",
+      })
+    } else {
       toast({
         title: "Account created!",
         description: "Check your email to confirm your account.",
         variant: "success",
       })
       router.push("/login")
-    } catch (error) {
-      toast({
-        title: "Sign up failed",
-        description: error instanceof Error ? error.message : "Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
     }
+    setLoading(false)
   }
 
   return (
