@@ -8,6 +8,7 @@ export const CHAT_MODELS: { value: ChatModel; label: string; provider: string }[
   { value: "deepseek/deepseek-r1", label: "DeepSeek R1", provider: "DeepSeek" },
   { value: "mistralai/mistral-large", label: "Mistral Large", provider: "Mistral" },
   { value: "qwen/qwen2.5-72b-instruct", label: "Qwen 2.5 72B", provider: "Qwen" },
+  { value: "minimaxai/minimax-m2.7", label: "MiniMax M2.7", provider: "MiniMax" },
 ]
 
 export const IMAGE_MODELS: { value: ImageModel; label: string; provider: string }[] = [

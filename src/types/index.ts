@@ -3,6 +3,7 @@ export type ChatModel =
   | "deepseek/deepseek-r1"
   | "mistralai/mistral-large"
   | "qwen/qwen2.5-72b-instruct"
+  | "minimaxai/minimax-m2.7"
 
 export type ImageModel =
   | "black-forest-labs/flux-schnell"
