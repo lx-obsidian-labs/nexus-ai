@@ -1,35 +1,16 @@
 "use client"
 
-import { useState } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import rehypeHighlight from "rehype-highlight"
 import { motion } from "framer-motion"
 import { cn, formatRelativeTime } from "@/lib/utils"
-import { Copy, Check, Sparkles } from "lucide-react"
+import { Sparkles, User } from "lucide-react"
+import { CodeBlock } from "./code-block"
 import type { Message } from "@/types"
 
 interface MessageBubbleProps {
   message: Message
-}
-
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false)
-
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(text)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
-  }
-
-  return (
-    <button
-      onClick={handleCopy}
-      className="absolute right-2 top-2 rounded-md p-1.5 text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground group-hover/code:opacity-100"
-    >
-      {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
-    </button>
-  )
 }
 
 export function MessageBubble({ message }: MessageBubbleProps) {
@@ -42,15 +23,17 @@ export function MessageBubble({ message }: MessageBubbleProps) {
       transition={{ duration: 0.25, ease: "easeOut" }}
       className={cn("flex gap-3", isUser ? "flex-row-reverse" : "flex-row")}
     >
-      {!isUser && (
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border bg-background">
+        {isUser ? (
+          <User className="h-4 w-4 text-muted-foreground" />
+        ) : (
           <Sparkles className="h-4 w-4 text-primary" />
-        </div>
-      )}
-      <div className={cn("flex max-w-[75%] flex-col", isUser && "items-end")}>
+        )}
+      </div>
+      <div className={cn("flex max-w-[80%] flex-col", isUser && "items-end")}>
         <div
           className={cn(
-            "rounded-2xl px-4 py-3 text-sm",
+            "rounded-2xl px-4 py-3 text-sm leading-relaxed",
             isUser
               ? "bg-primary text-primary-foreground shadow-sm"
               : "bg-muted/50 border shadow-xs",
@@ -59,39 +42,26 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           {isUser ? (
             <p className="whitespace-pre-wrap">{message.content}</p>
           ) : (
-            <div className="prose prose-sm dark:prose-invert max-w-none">
+            <div className="prose prose-sm dark:prose-invert max-w-none prose-pre:p-0 prose-pre:border-0 prose-pre:bg-transparent">
               {message.content ? (
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   rehypePlugins={[rehypeHighlight]}
                   components={{
-                    pre: ({ children }) => (
-                      <div className="group/code relative">
-                        <pre className="rounded-lg border bg-black/5 p-4 dark:bg-white/5">
-                          {children}
-                        </pre>
-                      </div>
-                    ),
+                    pre: ({ children }) => <>{children}</>,
                     code: ({ className, children, ...props }) => {
-                      const isInline = !className
-                      if (isInline) {
-                        return (
-                          <code
-                            className="rounded bg-muted px-1.5 py-0.5 text-sm font-mono"
-                            {...props}
-                          >
-                            {children}
-                          </code>
-                        )
+                      const match = /language-(\w+)/.exec(className || "")
+                      const code = String(children).replace(/\n$/, "")
+                      if (match) {
+                        return <CodeBlock language={match[1]} code={code} />
                       }
-                      const text = String(children).replace(/\n$/, "")
                       return (
-                        <>
-                          <CopyButton text={text} />
-                          <code className={className} {...props}>
-                            {children}
-                          </code>
-                        </>
+                        <code
+                          className="rounded bg-muted px-1.5 py-0.5 text-sm font-mono"
+                          {...props}
+                        >
+                          {children}
+                        </code>
                       )
                     },
                   }}

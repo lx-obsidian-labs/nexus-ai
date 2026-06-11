@@ -8,11 +8,15 @@ import { ModelSelector } from "@/components/chat/model-selector"
 import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import { Bot, Code2 } from "lucide-react"
 import type { Conversation, Message, ChatModel } from "@/types"
 
 export default function ConversationPage() {
   const params = useParams()
   const id = params.id as string
+  const [mode, setMode] = useState<"chat" | "coding">("chat")
   const [conversation, setConversation] = useState<Conversation | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
@@ -76,10 +80,31 @@ export default function ConversationPage() {
                 value={conversation.model as ChatModel}
                 onChange={handleModelChange}
               />
+              <div className="flex items-center gap-1 rounded-lg border bg-muted/50 p-0.5">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn("gap-1.5", mode === "chat" && "bg-background shadow-xs")}
+                  onClick={() => setMode("chat")}
+                >
+                  <Bot className="h-4 w-4" />
+                  Chat
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn("gap-1.5", mode === "coding" && "bg-background shadow-xs")}
+                  onClick={() => setMode("coding")}
+                >
+                  <Code2 className="h-4 w-4" />
+                  Coding
+                </Button>
+              </div>
             </div>
           )}
           <MessageList messages={messages} isStreaming={isStreaming} />
           <ChatInput
+            mode={mode}
             conversation={conversation}
             messages={messages}
             onMessagesChange={setMessages}

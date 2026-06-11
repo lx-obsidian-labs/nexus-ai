@@ -6,11 +6,12 @@ import { Textarea } from "@/components/ui/textarea"
 import { ArrowUp, StopCircle } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { generateId } from "@/lib/utils"
-import { getDefaultSystemPrompt } from "@/lib/ai/chat"
+import { getDefaultSystemPrompt, getCodingSystemPrompt } from "@/lib/ai/chat"
 import { toast } from "@/hooks/use-toast"
 import type { Conversation, Message, ChatModel } from "@/types"
 
 interface ChatInputProps {
+  mode: "chat" | "coding"
   conversation: Conversation | null
   messages: Message[]
   onMessagesChange: (messages: Message[]) => void
@@ -19,6 +20,7 @@ interface ChatInputProps {
 }
 
 export function ChatInput({
+  mode,
   conversation,
   messages,
   onMessagesChange,
@@ -106,7 +108,7 @@ export function ChatInput({
       onMessagesChange(updatedMessages)
 
       const apiMessages = [
-        { role: "system" as const, content: getDefaultSystemPrompt() },
+        { role: "system" as const, content: mode === "coding" ? getCodingSystemPrompt() : getDefaultSystemPrompt() },
         ...updatedMessages
           .filter((m) => m.role !== "system")
           .map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
