@@ -3,26 +3,11 @@ import type { NextConfig } from "next"
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "api.nvcf.nvidia.com",
-      },
-      {
-        protocol: "https",
-        hostname: "**.nvcf.nvidia.com",
-      },
-      {
-        protocol: "https",
-        hostname: "lh3.googleusercontent.com",
-      },
-      {
-        protocol: "https",
-        hostname: "avatars.githubusercontent.com",
-      },
+      { protocol: "https", hostname: "api.nvcf.nvidia.com" },
+      { protocol: "https", hostname: "**.nvcf.nvidia.com" },
+      { protocol: "https", hostname: "lh3.googleusercontent.com" },
+      { protocol: "https", hostname: "avatars.githubusercontent.com" },
     ],
-  },
-  typescript: {
-    ignoreBuildErrors: true,
   },
   async headers() {
     return [
