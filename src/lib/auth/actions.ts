@@ -1,6 +1,6 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createAdminClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 
 function getAppUrl(): string {
@@ -11,7 +11,7 @@ export async function signUp(email: string, password: string, fullName?: string)
   try {
     const supabase = await createClient()
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -21,6 +21,23 @@ export async function signUp(email: string, password: string, fullName?: string)
     })
 
     if (error) return { error: error.message }
+
+    if (data.user) {
+      try {
+        const admin = await createAdminClient()
+        await admin.from("profiles").upsert({
+          id: data.user.id,
+          username: email,
+          full_name: fullName ?? null,
+        }, { onConflict: "id" })
+        await admin.from("user_settings").upsert({
+          id: data.user.id,
+        }, { onConflict: "id" })
+      } catch {
+        // profile/settings may already exist from trigger — ignore
+      }
+    }
+
     revalidatePath("/", "layout")
     return { error: null }
   } catch (e) {
