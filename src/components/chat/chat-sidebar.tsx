@@ -13,7 +13,7 @@ import type { Conversation, Message } from "@/types"
 interface ChatSidebarProps {
   currentConversationId?: string
   onSelect: (conversation: Conversation, messages: Message[]) => void
-  onNew: () => void
+  onNew?: () => void
 }
 
 export function ChatSidebar({ currentConversationId, onSelect, onNew }: ChatSidebarProps) {
