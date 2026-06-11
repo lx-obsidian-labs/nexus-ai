@@ -8,6 +8,7 @@ export type ChatModel =
 export type ImageModel =
   | "black-forest-labs/flux-schnell"
   | "black-forest-labs/flux-dev"
+  | "black-forest-labs/flux-1.1-pro"
   | "stabilityai/stable-diffusion-xl"
 
 export type MessageRole = "user" | "assistant" | "system"

@@ -14,6 +14,7 @@ export const CHAT_MODELS: { value: ChatModel; label: string; provider: string }[
 export const IMAGE_MODELS: { value: ImageModel; label: string; provider: string }[] = [
   { value: "black-forest-labs/flux-schnell", label: "FLUX Schnell", provider: "Black Forest Labs" },
   { value: "black-forest-labs/flux-dev", label: "FLUX Dev", provider: "Black Forest Labs" },
+  { value: "black-forest-labs/flux-1.1-pro", label: "FLUX 1.1 Pro", provider: "Black Forest Labs" },
   { value: "stabilityai/stable-diffusion-xl", label: "Stable Diffusion XL", provider: "Stability AI" },
 ]
 
