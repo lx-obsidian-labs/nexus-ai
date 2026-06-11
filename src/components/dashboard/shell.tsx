@@ -21,7 +21,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   }, [])
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-background to-background">
       {/* Desktop sidebar */}
       <div className="hidden md:flex">
         <Sidebar user={user} />
@@ -35,7 +35,8 @@ export default function DashboardShell({ children }: { children: React.ReactNode
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 bg-black/50 md:hidden"
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
               onClick={() => setMobileOpen(false)}
             />
             <motion.aside
@@ -56,7 +57,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         variant="ghost"
         size="icon"
         className={cn(
-          "fixed left-3 top-3 z-30 flex md:hidden",
+          "fixed left-3 top-3 z-30 flex md:hidden glass",
           mobileOpen && "z-[60]",
         )}
         onClick={() => setMobileOpen(!mobileOpen)}

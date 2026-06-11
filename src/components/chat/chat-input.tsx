@@ -246,25 +246,27 @@ export function ChatInput({
   }
 
   return (
-    <div className="border-t bg-gradient-to-t from-background to-transparent px-4 py-4 pt-6">
+    <div className="border-t border-white/5 bg-gradient-to-t from-background via-background to-transparent px-4 py-4 pt-6">
       <div className="mx-auto flex max-w-3xl items-end gap-2">
         <div className="relative flex-1">
-          <Textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type a message..."
-            className="min-h-[48px] max-h-[200px] resize-none rounded-xl border bg-muted/50 pr-12 pl-4 py-3 shadow-xs transition-shadow focus-visible:shadow-sm focus-visible:shadow-primary/10"
-            rows={1}
-            disabled={isStreaming}
-          />
+          <div className="glass rounded-2xl p-1">
+            <Textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type a message..."
+              className="min-h-[48px] max-h-[200px] resize-none rounded-xl border-0 bg-transparent pr-12 pl-4 py-3 shadow-none transition-all placeholder:text-muted-foreground/50 focus-visible:ring-0 focus-visible:ring-offset-0"
+              rows={1}
+              disabled={isStreaming}
+            />
+          </div>
           {isStreaming ? (
             <Button
               size="icon"
               variant="secondary"
               onClick={handleStop}
-              className="absolute right-1.5 bottom-1.5 h-8 w-8 rounded-lg"
+              className="absolute right-2 bottom-2 h-8 w-8 rounded-xl bg-destructive/90 hover:bg-destructive"
             >
               <StopCircle className="h-4 w-4" />
             </Button>
@@ -275,7 +277,7 @@ export function ChatInput({
                   size="icon"
                   variant="ghost"
                   onClick={handleImprove}
-                  className="absolute right-11 bottom-1.5 h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground"
+                  className="absolute right-11 bottom-2 h-8 w-8 rounded-xl text-muted-foreground hover:text-foreground hover:bg-background/50"
                   title="Improve prompt"
                 >
                   <Sparkles className="h-4 w-4" />
@@ -285,7 +287,7 @@ export function ChatInput({
                 size="icon"
                 onClick={handleSubmit}
                 disabled={!input.trim()}
-                className="absolute right-1.5 bottom-1.5 h-8 w-8 rounded-lg"
+                className="absolute right-2 bottom-2 h-8 w-8 rounded-xl"
               >
                 {improving ? (
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />

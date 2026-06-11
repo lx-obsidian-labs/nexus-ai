@@ -72,25 +72,33 @@ export function ChatSidebar({ currentConversationId, onSelect, onNew }: ChatSide
   }
 
   return (
-    <div className="flex w-72 flex-col border-r">
+    <div className="flex w-72 flex-col border-r border-white/5 bg-sidebar-background">
       <div className="p-3">
-        <Button onClick={onNew} className="w-full justify-start gap-2" variant="outline">
+        <Button
+          onClick={onNew}
+          className="w-full justify-start gap-2 rounded-xl border-white/10 bg-background/50 hover:bg-background/80 transition-all duration-200"
+          variant="outline"
+        >
           <Plus className="h-4 w-4" />
           New conversation
         </Button>
       </div>
       <ScrollArea className="flex-1">
-        <div className="space-y-1 px-2 pb-2">
+        <div className="space-y-0.5 px-2 pb-2">
           {conversations.map((conv) => (
             <div
               key={conv.id}
               onClick={() => handleSelect(conv)}
               className={cn(
-                "group flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-accent",
-                conv.id === currentConversationId && "bg-accent",
+                "group flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-all duration-200",
+                conv.id === currentConversationId
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground",
               )}
             >
-              <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <div className={cn("flex h-7 w-7 items-center justify-center rounded-lg shrink-0", conv.id === currentConversationId && "bg-primary/10")}>
+                <MessageSquare className={cn("h-3.5 w-3.5", conv.id === currentConversationId && "text-primary")} />
+              </div>
               {editingId === conv.id ? (
                 <div className="flex flex-1 items-center gap-1">
                   <Input
@@ -106,7 +114,7 @@ export function ChatSidebar({ currentConversationId, onSelect, onNew }: ChatSide
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6"
+                    className="h-6 w-6 shrink-0"
                     onClick={(e) => { e.stopPropagation(); handleRename(conv.id) }}
                   >
                     <Check className="h-3 w-3" />
@@ -114,7 +122,7 @@ export function ChatSidebar({ currentConversationId, onSelect, onNew }: ChatSide
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6"
+                    className="h-6 w-6 shrink-0"
                     onClick={(e) => { e.stopPropagation(); setEditingId(null) }}
                   >
                     <X className="h-3 w-3" />
@@ -123,14 +131,11 @@ export function ChatSidebar({ currentConversationId, onSelect, onNew }: ChatSide
               ) : (
                 <>
                   <span className="flex-1 truncate">{conv.title}</span>
-                  <span className="text-xs text-muted-foreground hidden group-hover:block">
-                    {formatRelativeTime(conv.updated_at)}
-                  </span>
-                  <div className="hidden group-hover:flex items-center gap-0.5">
+                  <div className="hidden group-hover:flex items-center gap-0.5 shrink-0">
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-6 w-6"
+                      className="h-6 w-6 hover:bg-background/50"
                       onClick={(e) => {
                         e.stopPropagation()
                         setEditingId(conv.id)
@@ -142,7 +147,7 @@ export function ChatSidebar({ currentConversationId, onSelect, onNew }: ChatSide
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-6 w-6 text-destructive"
+                      className="h-6 w-6 text-destructive hover:bg-destructive/10"
                       onClick={(e) => handleDelete(conv.id, e)}
                     >
                       <Trash2 className="h-3 w-3" />

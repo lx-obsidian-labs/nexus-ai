@@ -81,7 +81,7 @@ export default function ConversationPage() {
         />
         <div className="flex flex-1 flex-col">
           {conversation && (
-            <div className="flex items-center justify-between border-b px-6 py-3">
+            <div className="glass border-b border-white/5 px-6 py-3 flex items-center justify-between shrink-0">
               <ModelSelector
                 value={conversation.model as ChatModel}
                 onChange={handleModelChange}
@@ -89,13 +89,13 @@ export default function ConversationPage() {
               <div className="flex items-center gap-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="gap-1.5">
+                    <Button variant="ghost" size="sm" className="gap-1.5 rounded-xl">
                       <Download className="h-4 w-4" />
                       Export
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => {
+                  <DropdownMenuContent align="end" className="rounded-xl">
+                    <DropdownMenuItem className="rounded-lg" onClick={() => {
                       const md = formatConversationAsMarkdown(
                         conversation?.title ?? "Conversation",
                         conversation?.model ?? "unknown",
@@ -106,7 +106,7 @@ export default function ConversationPage() {
                     }}>
                       Export as Markdown
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => {
+                    <DropdownMenuItem className="rounded-lg" onClick={() => {
                       const json = formatConversationAsJson(
                         conversation?.title ?? "Conversation",
                         conversation?.model ?? "unknown",
@@ -119,11 +119,11 @@ export default function ConversationPage() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <div className="flex items-center gap-1 rounded-lg border bg-muted/50 p-0.5">
+                <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-background/50 p-0.5">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className={cn("gap-1.5", mode === "chat" && "bg-background shadow-xs")}
+                    className={cn("gap-1.5 rounded-lg", mode === "chat" && "bg-background shadow-xs")}
                     onClick={() => setMode("chat")}
                   >
                     <Bot className="h-4 w-4" />
@@ -132,7 +132,7 @@ export default function ConversationPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className={cn("gap-1.5", mode === "coding" && "bg-background shadow-xs")}
+                    className={cn("gap-1.5 rounded-lg", mode === "coding" && "bg-background shadow-xs")}
                     onClick={() => setMode("coding")}
                   >
                     <Code2 className="h-4 w-4" />

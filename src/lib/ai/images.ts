@@ -15,6 +15,7 @@ interface NVCFImageResponse {
   artifacts?: { base64: string; seed: number }[]
   image?: string
   seed?: number
+  data?: { url?: string; b64_json?: string; index?: number }[]
 }
 
 export async function generateImage(
@@ -48,6 +49,16 @@ export async function generateImage(
   }
 
   const data: NVCFImageResponse = await response.json()
+
+  if (data.data && data.data.length > 0) {
+    const entry = data.data[0]
+    if (entry.url) {
+      return { url: entry.url, seed: data.seed ?? null }
+    }
+    if (entry.b64_json) {
+      return { url: `data:image/png;base64,${entry.b64_json}`, seed: data.seed ?? null }
+    }
+  }
 
   if (data.image) {
     return { url: data.image, seed: data.seed ?? null }

@@ -20,21 +20,23 @@ export function MessageList({ messages, isStreaming }: MessageListProps) {
   if (messages.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <div className="text-center space-y-4 max-w-sm">
+        <div className="text-center space-y-6 max-w-sm">
           <div className="flex justify-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
-              <MessageSquare className="h-7 w-7 text-primary" />
+            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/10 to-purple-500/10">
+              <MessageSquare className="h-10 w-10 text-primary/60" />
             </div>
           </div>
-          <h2 className="text-2xl font-semibold">Start a conversation</h2>
-          <p className="text-sm text-muted-foreground">
-            Choose a model from the sidebar and type a message below to begin.
-          </p>
-          <div className="flex flex-wrap justify-center gap-2 pt-2">
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold tracking-tight">Start a conversation</h2>
+            <p className="text-sm text-muted-foreground">
+              Choose a model and type a message below to begin.
+            </p>
+          </div>
+          <div className="flex flex-wrap justify-center gap-2">
             {["Ask a question", "Write code", "Explain something", "Brainstorm ideas"].map((hint) => (
               <span
                 key={hint}
-                className="rounded-full border bg-muted/50 px-3 py-1 text-xs text-muted-foreground"
+                className="glass rounded-full px-3 py-1.5 text-xs text-muted-foreground"
               >
                 {hint}
               </span>

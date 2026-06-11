@@ -14,7 +14,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Separator } from "@/components/ui/separator"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { signOut } from "@/lib/auth/actions"
 import { useState } from "react"
@@ -47,13 +46,15 @@ export function Sidebar({ user }: SidebarProps) {
   return (
     <TooltipProvider delayDuration={0}>
       <motion.aside
-        animate={{ width: collapsed ? 64 : 256 }}
-        transition={{ duration: 0.2, ease: "easeInOut" }}
-        className="flex flex-col border-r bg-sidebar-background overflow-hidden"
+        animate={{ width: collapsed ? 68 : 256 }}
+        transition={{ duration: 0.25, ease: "easeInOut" }}
+        className="flex flex-col border-r bg-sidebar-background overflow-hidden relative"
       >
-        <div className={cn("flex h-14 items-center border-b px-4 shrink-0", collapsed && "justify-center")}>
-          <Link href="/chat" className={cn("flex items-center gap-2 font-semibold", collapsed && "justify-center")}>
-            <Sparkles className="h-5 w-5 text-primary shrink-0" />
+        <div className={cn("flex h-14 items-center border-b border-sidebar-border px-3 shrink-0", collapsed && "justify-center px-0")}>
+          <Link href="/chat" className={cn("flex items-center gap-2.5 font-semibold", collapsed && "justify-center")}>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+              <Sparkles className="h-4 w-4 text-primary" />
+            </div>
             <AnimatePresence initial={false}>
               {!collapsed && (
                 <motion.span
@@ -61,7 +62,7 @@ export function Sidebar({ user }: SidebarProps) {
                   animate={{ opacity: 1, width: "auto" }}
                   exit={{ opacity: 0, width: 0 }}
                   transition={{ duration: 0.15 }}
-                  className="overflow-hidden whitespace-nowrap"
+                  className="overflow-hidden whitespace-nowrap text-sm"
                 >
                   {APP_NAME}
                 </motion.span>
@@ -71,14 +72,14 @@ export function Sidebar({ user }: SidebarProps) {
           <Button
             variant="ghost"
             size="icon"
-            className={cn("ml-auto h-8 w-8 shrink-0", collapsed && "ml-0")}
+            className={cn("ml-auto h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground", collapsed && "ml-0")}
             onClick={() => setCollapsed(!collapsed)}
           >
             {collapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
           </Button>
         </div>
 
-        <nav className="flex-1 space-y-1 p-2 overflow-y-auto">
+        <nav className="flex-1 space-y-1 p-2.5 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon
             const isActive = pathname.startsWith(item.href)
@@ -88,22 +89,24 @@ export function Sidebar({ user }: SidebarProps) {
                   <Link
                     href={item.href}
                     className={cn(
-                      "relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                      "relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
                       isActive
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                        : "text-muted-foreground",
+                        ? "text-sidebar-accent-foreground"
+                        : "text-muted-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent",
                       collapsed && "justify-center px-2",
                     )}
                   >
                     {isActive && (
                       <motion.div
                         layoutId="nav-active"
-                        className="absolute inset-0 rounded-lg bg-sidebar-accent"
+                        className="absolute inset-0 rounded-xl bg-sidebar-accent"
                         transition={{ type: "spring", stiffness: 380, damping: 30 }}
                       />
                     )}
                     <span className="relative z-10 flex items-center gap-3">
-                      <Icon className="h-5 w-5 shrink-0" />
+                      <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-200", isActive && "bg-primary/10")}>
+                        <Icon className={cn("h-4 w-4 shrink-0 transition-colors", isActive && "text-primary")} />
+                      </div>
                       <AnimatePresence initial={false}>
                         {!collapsed && (
                           <motion.span
@@ -126,21 +129,19 @@ export function Sidebar({ user }: SidebarProps) {
           })}
         </nav>
 
-        <Separator />
-
-        <div className={cn("p-2 shrink-0", collapsed && "flex justify-center")}>
+        <div className="border-t border-sidebar-border p-2.5 shrink-0">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 className={cn(
-                  "flex w-full items-center gap-3 px-3 py-2",
-                  collapsed && "w-auto px-2",
+                  "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 h-auto hover:bg-sidebar-accent transition-all duration-200",
+                  collapsed && "w-auto px-2 justify-center",
                 )}
               >
-                <Avatar className="h-8 w-8 shrink-0">
+                <Avatar className="h-8 w-8 shrink-0 ring-2 ring-sidebar-border">
                   <AvatarImage src={user?.user_metadata?.avatar_url ?? ""} />
-                  <AvatarFallback>
+                  <AvatarFallback className="text-xs bg-primary/10 text-primary">
                     {(user?.email?.[0] ?? "U").toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
@@ -153,7 +154,7 @@ export function Sidebar({ user }: SidebarProps) {
                       transition={{ duration: 0.12 }}
                       className="flex-1 text-left text-sm overflow-hidden"
                     >
-                      <p className="font-medium truncate">
+                      <p className="font-medium truncate text-sidebar-foreground">
                         {user?.user_metadata?.full_name ?? user?.email ?? "User"}
                       </p>
                       <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
@@ -162,12 +163,12 @@ export function Sidebar({ user }: SidebarProps) {
                 </AnimatePresence>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem asChild>
+            <DropdownMenuContent align="end" className="w-56 rounded-xl">
+              <DropdownMenuItem asChild className="rounded-lg">
                 <Link href="/settings">Settings</Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+              <DropdownMenuItem onClick={handleSignOut} className="text-destructive rounded-lg">
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign out
               </DropdownMenuItem>

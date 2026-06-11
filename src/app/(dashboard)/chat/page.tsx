@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn, downloadAsFile, formatConversationAsMarkdown, formatConversationAsJson } from "@/lib/utils"
-import { Bot, Code2, Download } from "lucide-react"
+import { Bot, Code2, Download, MessageSquare } from "lucide-react"
 import type { Conversation, Message, ChatModel } from "@/types"
 
 export type ChatMode = "chat" | "coding"
@@ -50,8 +50,14 @@ export default function ChatPage() {
           onNew={handleNewConversation}
         />
         <div className="flex flex-1 flex-col">
-          <div className="flex items-center justify-between border-b px-6 py-3">
-            <div className="flex items-center gap-2">
+          <div className="glass border-b border-white/5 px-6 py-3 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-3">
+              {!conversation && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <MessageSquare className="h-4 w-4" />
+                  <span>New conversation</span>
+                </div>
+              )}
               <ModelSelector
                 value={conversation?.model as ChatModel ?? "meta/llama-3.1-70b-instruct"}
                 onChange={handleModelChange}
@@ -61,13 +67,13 @@ export default function ChatPage() {
               {conversation && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="gap-1.5">
+                    <Button variant="ghost" size="sm" className="gap-1.5 rounded-xl">
                       <Download className="h-4 w-4" />
                       Export
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => {
+                  <DropdownMenuContent align="end" className="rounded-xl">
+                    <DropdownMenuItem className="rounded-lg" onClick={() => {
                       const md = formatConversationAsMarkdown(
                         conversation.title,
                         conversation.model,
@@ -78,7 +84,7 @@ export default function ChatPage() {
                     }}>
                       Export as Markdown
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => {
+                    <DropdownMenuItem className="rounded-lg" onClick={() => {
                       const json = formatConversationAsJson(
                         conversation.title,
                         conversation.model,
@@ -92,11 +98,11 @@ export default function ChatPage() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
-              <div className="flex items-center gap-1 rounded-lg border bg-muted/50 p-0.5">
+              <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-background/50 p-0.5">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={cn("gap-1.5", mode === "chat" && "bg-background shadow-xs")}
+                  className={cn("gap-1.5 rounded-lg", mode === "chat" && "bg-background shadow-xs")}
                   onClick={() => setMode("chat")}
                 >
                   <Bot className="h-4 w-4" />
@@ -105,7 +111,7 @@ export default function ChatPage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={cn("gap-1.5", mode === "coding" && "bg-background shadow-xs")}
+                  className={cn("gap-1.5 rounded-lg", mode === "coding" && "bg-background shadow-xs")}
                   onClick={() => setMode("coding")}
                 >
                   <Code2 className="h-4 w-4" />

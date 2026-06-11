@@ -20,14 +20,19 @@ export function MessageBubble({ message }: MessageBubbleProps) {
     <motion.div
       initial={{ opacity: 0, y: 12, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.25, ease: "easeOut" }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
       className={cn("flex gap-3", isUser ? "flex-row-reverse" : "flex-row")}
     >
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border bg-background">
+      <div className={cn(
+        "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl",
+        isUser
+          ? "bg-primary/10 text-primary"
+          : "bg-gradient-to-br from-primary/20 to-purple-500/20 text-primary"
+      )}>
         {isUser ? (
-          <User className="h-4 w-4 text-muted-foreground" />
+          <User className="h-4 w-4" />
         ) : (
-          <Sparkles className="h-4 w-4 text-primary" />
+          <Sparkles className="h-4 w-4" />
         )}
       </div>
       <div className={cn("flex max-w-[80%] flex-col", isUser && "items-end")}>
@@ -35,8 +40,8 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           className={cn(
             "rounded-2xl px-4 py-3 text-sm leading-relaxed",
             isUser
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "bg-muted/50 border shadow-xs",
+              ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+              : "glass border-white/5",
           )}
         >
           {isUser ? (
@@ -74,7 +79,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             </div>
           )}
         </div>
-        <span className="mt-1 px-1 text-[10px] text-muted-foreground/60">
+        <span className="mt-1 px-1 text-[10px] text-muted-foreground/50">
           {formatRelativeTime(message.created_at)}
         </span>
       </div>
