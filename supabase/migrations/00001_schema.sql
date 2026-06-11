@@ -78,29 +78,12 @@ CREATE TABLE user_settings (
   FOREIGN KEY (id) REFERENCES profiles(id) ON DELETE CASCADE
 );
 
--- Auto-create profile and settings on user signup
-CREATE OR REPLACE FUNCTION handle_new_user()
-RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO profiles (id, username, full_name, avatar_url)
-  VALUES (
-    NEW.id,
-    NEW.email,
-    NEW.raw_user_meta_data->>'full_name',
-    NEW.raw_user_meta_data->>'avatar_url'
-  );
+-- Drop any existing trigger that auto-creates profiles
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+DROP FUNCTION IF EXISTS handle_new_user();
 
-  INSERT INTO user_settings (id)
-  VALUES (NEW.id);
-
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-CREATE OR REPLACE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW
-  EXECUTE FUNCTION handle_new_user();
+-- Profile and settings creation is handled in application code
+-- (signUp server action, OAuth callback) using the admin client.
 
 -- Auto-update updated_at
 CREATE OR REPLACE FUNCTION update_updated_at()
