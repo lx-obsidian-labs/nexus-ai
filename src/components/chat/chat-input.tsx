@@ -7,6 +7,7 @@ import { ArrowUp, StopCircle } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { generateId } from "@/lib/utils"
 import { getDefaultSystemPrompt } from "@/lib/ai/chat"
+import { toast } from "@/hooks/use-toast"
 import type { Conversation, Message, ChatModel } from "@/types"
 
 interface ChatInputProps {
@@ -120,13 +121,17 @@ export function ChatInput({
         signal: abortRef.current.signal,
       })
 
-      if (!response.ok) throw new Error("Stream failed")
+      if (!response.ok) {
+        const errBody = await response.text().catch(() => "")
+        throw new Error(errBody || `API error: ${response.status}`)
+      }
 
       const reader = response.body?.getReader()
       if (!reader) throw new Error("No reader")
 
       const decoder = new TextDecoder()
       let fullContent = ""
+      let streamError: string | null = null
 
       while (true) {
         const { done, value } = await reader.read()
@@ -141,6 +146,10 @@ export function ChatInput({
             if (data === "[DONE]") continue
             try {
               const parsed = JSON.parse(data)
+              if (parsed.error) {
+                streamError = parsed.error
+                continue
+              }
               fullContent += parsed.content ?? ""
               onMessagesChange(
                 updatedMessages.map((m) =>
@@ -154,6 +163,10 @@ export function ChatInput({
         }
       }
 
+      if (!fullContent && streamError) {
+        throw new Error(streamError)
+      }
+
       await supabase.from("messages").insert({
         id: assistantMessage.id,
         conversation_id: convId,
@@ -162,7 +175,8 @@ export function ChatInput({
       })
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") return
-      console.error("Chat error:", err)
+      const msg = err instanceof Error ? err.message : "Chat failed"
+      toast({ title: "Chat error", description: msg, variant: "destructive" })
     } finally {
       setIsStreaming(false)
       onStreamingChange(false)
