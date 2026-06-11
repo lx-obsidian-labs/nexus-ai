@@ -1,17 +1,29 @@
 import type { ImageModel, ImageGenerationResult } from "@/types"
 
-const IMAGES_API_URL = process.env.NVIDIA_API_URL?.replace("/chat/completions", "/images/generations") || `${process.env.NVIDIA_NIM_BASE_URL || "https://integrate.api.nvidia.com/v1"}/images/generations`
 const NVIDIA_API_KEY = process.env.NVIDIA_NIM_API_KEY
 
-interface NVCFImageRequest {
-  model: string
-  prompt: string
-  width?: number
-  height?: number
-  seed?: number
+const NVIDIA_OVERRIDE = process.env.NVIDIA_IMAGES_API_URL || process.env.NVIDIA_API_URL?.replace("/chat/completions", "/images/generations")
+
+const MODEL_CONFIG: Record<string, { endpoint: string; steps: number }> = {
+  "black-forest-labs/flux-schnell": {
+    endpoint: "https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.1-schnell",
+    steps: 4,
+  },
+  "black-forest-labs/flux-dev": {
+    endpoint: "https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.1-dev",
+    steps: 28,
+  },
+  "black-forest-labs/flux-1.1-pro": {
+    endpoint: "https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.1.1-pro",
+    steps: 28,
+  },
+  "stabilityai/stable-diffusion-xl": {
+    endpoint: "https://ai.api.nvidia.com/v1/genai/stabilityai/stable-diffusion-xl",
+    steps: 50,
+  },
 }
 
-interface NVCFImageResponse {
+interface ImageResponse {
   artifacts?: { base64: string; seed: number }[]
   image?: string
   seed?: number
@@ -27,15 +39,23 @@ export async function generateImage(
     throw new Error("NVIDIA NIM API key is not configured")
   }
 
-  const body: NVCFImageRequest = {
-    model,
-    prompt,
-    width: options?.width ?? 1024,
-    height: options?.height ?? 1024,
-    seed: options?.seed,
+  const config = MODEL_CONFIG[model]
+  const endpoint = NVIDIA_OVERRIDE || config?.endpoint
+
+  if (!endpoint) {
+    throw new Error(`Unknown model: ${model}`)
   }
 
-  const response = await fetch(IMAGES_API_URL, {
+  const body: Record<string, unknown> = {
+    prompt,
+    mode: "Image Generation",
+    steps: config?.steps ?? 28,
+    width: options?.width ?? 1024,
+    height: options?.height ?? 1024,
+    seed: options?.seed ?? 0,
+  }
+
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -45,10 +65,11 @@ export async function generateImage(
   })
 
   if (!response.ok) {
-    throw new Error(`NVIDIA API error: ${response.status} ${response.statusText}`)
+    const errText = await response.text().catch(() => "")
+    throw new Error(`NVIDIA API error: ${response.status}${errText ? ` - ${errText.slice(0, 200)}` : ""}`)
   }
 
-  const data: NVCFImageResponse = await response.json()
+  const data: ImageResponse = await response.json()
 
   if (data.data && data.data.length > 0) {
     const entry = data.data[0]
@@ -61,7 +82,8 @@ export async function generateImage(
   }
 
   if (data.image) {
-    return { url: data.image, seed: data.seed ?? null }
+    const url = data.image.startsWith("data:") || data.image.startsWith("http") ? data.image : `data:image/png;base64,${data.image}`
+    return { url, seed: data.seed ?? null }
   }
 
   if (data.artifacts && data.artifacts.length > 0) {
@@ -70,5 +92,5 @@ export async function generateImage(
     return { url, seed: data.artifacts[0].seed }
   }
 
-  throw new Error("No image generated")
+  throw new Error("No image generated from API response")
 }
