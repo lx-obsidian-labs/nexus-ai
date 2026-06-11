@@ -7,8 +7,14 @@ import { ChatSidebar } from "@/components/chat/chat-sidebar"
 import { ModelSelector } from "@/components/chat/model-selector"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
-import { Bot, Code2 } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { cn, downloadAsFile, formatConversationAsMarkdown, formatConversationAsJson } from "@/lib/utils"
+import { Bot, Code2, Download } from "lucide-react"
 import type { Conversation, Message, ChatModel } from "@/types"
 
 export type ChatMode = "chat" | "coding"
@@ -51,25 +57,61 @@ export default function ChatPage() {
                 onChange={handleModelChange}
               />
             </div>
-            <div className="flex items-center gap-1 rounded-lg border bg-muted/50 p-0.5">
-              <Button
-                variant="ghost"
-                size="sm"
-                className={cn("gap-1.5", mode === "chat" && "bg-background shadow-xs")}
-                onClick={() => setMode("chat")}
-              >
-                <Bot className="h-4 w-4" />
-                Chat
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className={cn("gap-1.5", mode === "coding" && "bg-background shadow-xs")}
-                onClick={() => setMode("coding")}
-              >
-                <Code2 className="h-4 w-4" />
-                Coding
-              </Button>
+            <div className="flex items-center gap-2">
+              {conversation && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="gap-1.5">
+                      <Download className="h-4 w-4" />
+                      Export
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => {
+                      const md = formatConversationAsMarkdown(
+                        conversation.title,
+                        conversation.model,
+                        conversation.created_at,
+                        messages.map(m => ({ role: m.role, content: m.content })),
+                      )
+                      downloadAsFile(md, `${conversation.title}.md`)
+                    }}>
+                      Export as Markdown
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => {
+                      const json = formatConversationAsJson(
+                        conversation.title,
+                        conversation.model,
+                        conversation.created_at,
+                        messages.map(m => ({ role: m.role, content: m.content })),
+                      )
+                      downloadAsFile(json, `${conversation.title}.json`, "application/json")
+                    }}>
+                      Export as JSON
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+              <div className="flex items-center gap-1 rounded-lg border bg-muted/50 p-0.5">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn("gap-1.5", mode === "chat" && "bg-background shadow-xs")}
+                  onClick={() => setMode("chat")}
+                >
+                  <Bot className="h-4 w-4" />
+                  Chat
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn("gap-1.5", mode === "coding" && "bg-background shadow-xs")}
+                  onClick={() => setMode("coding")}
+                >
+                  <Code2 className="h-4 w-4" />
+                  Coding
+                </Button>
+              </div>
             </div>
           </div>
           <MessageList messages={messages} isStreaming={isStreaming} />

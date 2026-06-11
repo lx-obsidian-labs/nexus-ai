@@ -9,8 +9,14 @@ import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
-import { Bot, Code2 } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { cn, downloadAsFile, formatConversationAsMarkdown, formatConversationAsJson } from "@/lib/utils"
+import { Bot, Code2, Download } from "lucide-react"
 import type { Conversation, Message, ChatModel } from "@/types"
 
 export default function ConversationPage() {
@@ -80,25 +86,59 @@ export default function ConversationPage() {
                 value={conversation.model as ChatModel}
                 onChange={handleModelChange}
               />
-              <div className="flex items-center gap-1 rounded-lg border bg-muted/50 p-0.5">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn("gap-1.5", mode === "chat" && "bg-background shadow-xs")}
-                  onClick={() => setMode("chat")}
-                >
-                  <Bot className="h-4 w-4" />
-                  Chat
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn("gap-1.5", mode === "coding" && "bg-background shadow-xs")}
-                  onClick={() => setMode("coding")}
-                >
-                  <Code2 className="h-4 w-4" />
-                  Coding
-                </Button>
+              <div className="flex items-center gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="gap-1.5">
+                      <Download className="h-4 w-4" />
+                      Export
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => {
+                      const md = formatConversationAsMarkdown(
+                        conversation?.title ?? "Conversation",
+                        conversation?.model ?? "unknown",
+                        conversation?.created_at ?? new Date().toISOString(),
+                        messages.map(m => ({ role: m.role, content: m.content })),
+                      )
+                      downloadAsFile(md, `${conversation?.title ?? "conversation"}.md`)
+                    }}>
+                      Export as Markdown
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => {
+                      const json = formatConversationAsJson(
+                        conversation?.title ?? "Conversation",
+                        conversation?.model ?? "unknown",
+                        conversation?.created_at ?? new Date().toISOString(),
+                        messages.map(m => ({ role: m.role, content: m.content })),
+                      )
+                      downloadAsFile(json, `${conversation?.title ?? "conversation"}.json`, "application/json")
+                    }}>
+                      Export as JSON
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <div className="flex items-center gap-1 rounded-lg border bg-muted/50 p-0.5">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn("gap-1.5", mode === "chat" && "bg-background shadow-xs")}
+                    onClick={() => setMode("chat")}
+                  >
+                    <Bot className="h-4 w-4" />
+                    Chat
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn("gap-1.5", mode === "coding" && "bg-background shadow-xs")}
+                    onClick={() => setMode("coding")}
+                  >
+                    <Code2 className="h-4 w-4" />
+                    Coding
+                  </Button>
+                </div>
               </div>
             </div>
           )}

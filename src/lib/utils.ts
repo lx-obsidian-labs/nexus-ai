@@ -45,3 +45,50 @@ export function downloadImage(url: string, filename: string): void {
   a.click()
   document.body.removeChild(a)
 }
+
+export function downloadAsFile(content: string, filename: string, type = "text/markdown"): void {
+  const blob = new Blob([content], { type })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
+export function formatConversationAsMarkdown(
+  title: string,
+  model: string,
+  createdAt: string,
+  messages: { role: string; content: string }[],
+): string {
+  const lines: string[] = []
+  lines.push(`# ${title}`)
+  lines.push("")
+  lines.push(`> Model: ${model}`)
+  lines.push(`> Date: ${formatDate(createdAt)}`)
+  lines.push("")
+  lines.push("---")
+  lines.push("")
+
+  for (const msg of messages) {
+    const prefix = msg.role === "user" ? "**You**" : "**Nexus AI**"
+    lines.push(`### ${prefix}`)
+    lines.push("")
+    lines.push(msg.content)
+    lines.push("")
+  }
+
+  return lines.join("\n")
+}
+
+export function formatConversationAsJson(
+  title: string,
+  model: string,
+  createdAt: string,
+  messages: { role: string; content: string }[],
+): string {
+  return JSON.stringify({ title, model, createdAt, messages }, null, 2)
+}

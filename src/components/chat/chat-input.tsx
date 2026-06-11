@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { ArrowUp, StopCircle } from "lucide-react"
+import { ArrowUp, StopCircle, Sparkles } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { generateId } from "@/lib/utils"
 import { getDefaultSystemPrompt, getCodingSystemPrompt } from "@/lib/ai/chat"
@@ -44,6 +44,58 @@ export function ChatInput({
     setIsStreaming(false)
     onStreamingChange(false)
   }, [onStreamingChange])
+
+  const [improving, setImproving] = useState(false)
+
+  const handleImprove = useCallback(async () => {
+    const content = input.trim()
+    if (!content || improving) return
+
+    setImproving(true)
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: conversation?.model ?? "meta/llama-3.1-70b-instruct",
+          messages: [
+            { role: "system", content: "You are a prompt engineering expert. Rewrite the user's message to be more detailed, specific, and effective. Return ONLY the improved prompt, no explanations." },
+            { role: "user", content },
+          ],
+        }),
+      })
+
+      if (!response.ok) throw new Error("Failed to improve prompt")
+
+      const reader = response.body?.getReader()
+      if (!reader) throw new Error("No reader")
+
+      const decoder = new TextDecoder()
+      let improved = ""
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        const text = decoder.decode(value, { stream: true })
+        for (const line of text.split("\n")) {
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6)
+            if (data === "[DONE]") continue
+            try {
+              const parsed = JSON.parse(data)
+              improved += parsed.content ?? ""
+            } catch { continue }
+          }
+        }
+      }
+
+      if (improved) setInput(improved)
+    } catch {
+      toast({ title: "Failed to improve prompt", variant: "destructive" })
+    } finally {
+      setImproving(false)
+    }
+  }, [input, improving, conversation?.model])
 
   const handleSubmit = useCallback(async () => {
     const content = input.trim()
@@ -217,14 +269,31 @@ export function ChatInput({
               <StopCircle className="h-4 w-4" />
             </Button>
           ) : (
-            <Button
-              size="icon"
-              onClick={handleSubmit}
-              disabled={!input.trim()}
-              className="absolute right-1.5 bottom-1.5 h-8 w-8 rounded-lg"
-            >
-              <ArrowUp className="h-4 w-4" />
-            </Button>
+            <>
+              {input.trim() && !improving && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={handleImprove}
+                  className="absolute right-11 bottom-1.5 h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground"
+                  title="Improve prompt"
+                >
+                  <Sparkles className="h-4 w-4" />
+                </Button>
+              )}
+              <Button
+                size="icon"
+                onClick={handleSubmit}
+                disabled={!input.trim()}
+                className="absolute right-1.5 bottom-1.5 h-8 w-8 rounded-lg"
+              >
+                {improving ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                ) : (
+                  <ArrowUp className="h-4 w-4" />
+                )}
+              </Button>
+            </>
           )}
         </div>
       </div>
