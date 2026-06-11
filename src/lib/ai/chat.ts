@@ -1,6 +1,6 @@
 import type { ChatModel, Message } from "@/types"
 
-const NVIDIA_BASE_URL = process.env.NVIDIA_NIM_BASE_URL || "https://integrate.api.nvidia.com/v1"
+const CHAT_API_URL = process.env.NVIDIA_API_URL || `${process.env.NVIDIA_NIM_BASE_URL || "https://integrate.api.nvidia.com/v1"}/chat/completions`
 const NVIDIA_API_KEY = process.env.NVIDIA_NIM_API_KEY
 
 interface NVCFRequest {
@@ -45,7 +45,7 @@ export async function generateChatCompletion(
     stream: false,
   }
 
-  const response = await fetch(`${NVIDIA_BASE_URL}/chat/completions`, {
+  const response = await fetch(CHAT_API_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -86,7 +86,7 @@ export async function* streamChatCompletion(
     stream: true,
   }
 
-  const response = await fetch(`${NVIDIA_BASE_URL}/chat/completions`, {
+  const response = await fetch(CHAT_API_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

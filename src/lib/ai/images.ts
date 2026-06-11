@@ -1,6 +1,6 @@
 import type { ImageModel, ImageGenerationResult } from "@/types"
 
-const NVIDIA_BASE_URL = process.env.NVIDIA_NIM_BASE_URL || "https://integrate.api.nvidia.com/v1"
+const IMAGES_API_URL = process.env.NVIDIA_API_URL?.replace("/chat/completions", "/images/generations") || `${process.env.NVIDIA_NIM_BASE_URL || "https://integrate.api.nvidia.com/v1"}/images/generations`
 const NVIDIA_API_KEY = process.env.NVIDIA_NIM_API_KEY
 
 interface NVCFImageRequest {
@@ -34,7 +34,7 @@ export async function generateImage(
     seed: options?.seed,
   }
 
-  const response = await fetch(`${NVIDIA_BASE_URL}/images/generations`, {
+  const response = await fetch(IMAGES_API_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
