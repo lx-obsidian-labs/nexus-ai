@@ -1,6 +1,6 @@
 import type { ChatModel, Message } from "@/types"
 
-const NVIDIA_BASE_URL = process.env.NVIDIA_NIM_BASE_URL || "https://api.nvcf.nvidia.com/v2/nvcf"
+const NVIDIA_BASE_URL = process.env.NVIDIA_NIM_BASE_URL || "https://integrate.api.nvidia.com/v1"
 const NVIDIA_API_KEY = process.env.NVIDIA_NIM_API_KEY
 
 interface NVCFRequest {
