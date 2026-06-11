@@ -11,6 +11,8 @@ export type ImageModel =
   | "black-forest-labs/flux-1.1-pro"
   | "stabilityai/stable-diffusion-xl"
 
+export type ChatMode = "chat" | "coding" | "websearch" | "research"
+
 export type MessageRole = "user" | "assistant" | "system"
 
 export interface Profile {

@@ -14,10 +14,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn, downloadAsFile, formatConversationAsMarkdown, formatConversationAsJson } from "@/lib/utils"
-import { Bot, Code2, Download, MessageSquare } from "lucide-react"
-import type { Conversation, Message, ChatModel } from "@/types"
+import { Bot, Code2, Download, MessageSquare, Globe, Briefcase } from "lucide-react"
+import type { Conversation, Message, ChatModel, ChatMode } from "@/types"
 
-export type ChatMode = "chat" | "coding"
+const MODES: { value: ChatMode; label: string; icon: typeof Bot }[] = [
+  { value: "chat", label: "Chat", icon: Bot },
+  { value: "coding", label: "Coding", icon: Code2 },
+  { value: "websearch", label: "Web Search", icon: Globe },
+  { value: "research", label: "Research", icon: Briefcase },
+]
 
 export default function ChatPage() {
   const [mode, setMode] = useState<ChatMode>("chat")
@@ -99,24 +104,21 @@ export default function ChatPage() {
                 </DropdownMenu>
               )}
               <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-background/50 p-0.5">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn("gap-1.5 rounded-lg", mode === "chat" && "bg-background shadow-xs")}
-                  onClick={() => setMode("chat")}
-                >
-                  <Bot className="h-4 w-4" />
-                  Chat
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn("gap-1.5 rounded-lg", mode === "coding" && "bg-background shadow-xs")}
-                  onClick={() => setMode("coding")}
-                >
-                  <Code2 className="h-4 w-4" />
-                  Coding
-                </Button>
+                {MODES.map((m) => {
+                  const Icon = m.icon
+                  return (
+                    <Button
+                      key={m.value}
+                      variant="ghost"
+                      size="sm"
+                      className={cn("gap-1.5 rounded-lg", mode === m.value && "bg-background shadow-xs")}
+                      onClick={() => setMode(m.value)}
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span className="hidden sm:inline">{m.label}</span>
+                    </Button>
+                  )
+                })}
               </div>
             </div>
           </div>

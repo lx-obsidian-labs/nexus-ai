@@ -6,12 +6,12 @@ import { Textarea } from "@/components/ui/textarea"
 import { ArrowUp, StopCircle, Sparkles } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { generateId } from "@/lib/utils"
-import { getDefaultSystemPrompt, getCodingSystemPrompt } from "@/lib/ai/chat"
+import { getDefaultSystemPrompt, getCodingSystemPrompt, getWebSearchSystemPrompt, getResearchSystemPrompt } from "@/lib/ai/chat"
 import { toast } from "@/hooks/use-toast"
-import type { Conversation, Message, ChatModel } from "@/types"
+import type { Conversation, Message, ChatModel, ChatMode } from "@/types"
 
 interface ChatInputProps {
-  mode: "chat" | "coding"
+  mode: ChatMode
   conversation: Conversation | null
   messages: Message[]
   onMessagesChange: (messages: Message[]) => void
@@ -159,8 +159,30 @@ export function ChatInput({
       const updatedMessages = [...messages, userMessage, assistantMessage]
       onMessagesChange(updatedMessages)
 
+      let systemPrompt = getDefaultSystemPrompt()
+      if (mode === "coding") systemPrompt = getCodingSystemPrompt()
+      else if (mode === "websearch") systemPrompt = getWebSearchSystemPrompt()
+      else if (mode === "research") systemPrompt = getResearchSystemPrompt()
+
+      let searchContext = ""
+      if (mode === "websearch") {
+        const searchRes = await fetch("/api/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: content }),
+        })
+        const searchData = await searchRes.json()
+        if (searchData.results?.length > 0) {
+          searchContext = "\n\nWeb search results:\n" + searchData.results.map((r: any, i: number) =>
+            `[${i + 1}] ${r.title}\n${r.snippet}\nURL: ${r.link}`
+          ).join("\n\n")
+        } else if (searchData.error) {
+          searchContext = `\n\n[Note: Web search unavailable - ${searchData.error}]`
+        }
+      }
+
       const apiMessages = [
-        { role: "system" as const, content: mode === "coding" ? getCodingSystemPrompt() : getDefaultSystemPrompt() },
+        { role: "system" as const, content: systemPrompt + (searchContext ? `\n\n${searchContext}` : "") },
         ...updatedMessages
           .filter((m) => m.role !== "system")
           .map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
