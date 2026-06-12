@@ -1,13 +1,13 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import Link from "next/link"
+import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { cn, formatRelativeTime, truncate } from "@/lib/utils"
+import { cn, formatRelativeTime } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
-import { Plus, MessageSquare, Trash2, Pencil, Check, X } from "lucide-react"
+import { Plus, MessageSquare, Trash2, Pencil, Check, X, Search, PanelLeft } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import { motion, AnimatePresence } from "framer-motion"
 import type { Conversation, Message } from "@/types"
 
 interface ChatSidebarProps {
@@ -20,6 +20,8 @@ export function ChatSidebar({ currentConversationId, onSelect, onNew }: ChatSide
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState("")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   useEffect(() => {
     const supabase = createClient()
@@ -45,6 +47,12 @@ export function ChatSidebar({ currentConversationId, onSelect, onNew }: ChatSide
     if (data) setConversations(data)
   }
 
+  const filtered = useMemo(() => {
+    if (!searchQuery.trim()) return conversations
+    const q = searchQuery.toLowerCase()
+    return conversations.filter((c) => c.title.toLowerCase().includes(q))
+  }, [conversations, searchQuery])
+
   const handleSelect = async (conv: Conversation) => {
     const supabase = createClient()
     const { data: messages } = await supabase
@@ -54,6 +62,7 @@ export function ChatSidebar({ currentConversationId, onSelect, onNew }: ChatSide
       .order("created_at", { ascending: true })
 
     onSelect(conv, messages ?? [])
+    setMobileOpen(false)
   }
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
@@ -71,21 +80,33 @@ export function ChatSidebar({ currentConversationId, onSelect, onNew }: ChatSide
     loadConversations()
   }
 
-  return (
-    <div className="flex w-72 flex-col border-r border-white/5 bg-sidebar-background">
-      <div className="p-3">
+  const sidebarContent = (
+    <div className="flex h-full w-72 flex-col bg-sidebar-background">
+      <div className="p-3 space-y-2">
         <Button
-          onClick={onNew}
+          onClick={() => { onNew?.(); setMobileOpen(false) }}
           className="w-full justify-start gap-2 rounded-xl border-white/10 bg-background/50 hover:bg-background/80 transition-all duration-200"
           variant="outline"
         >
           <Plus className="h-4 w-4" />
           New conversation
         </Button>
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search conversations..."
+            className="h-8 rounded-xl border-white/5 bg-background/30 pl-8 text-xs placeholder:text-muted-foreground/50"
+          />
+        </div>
       </div>
       <ScrollArea className="flex-1">
         <div className="space-y-0.5 px-2 pb-2">
-          {conversations.map((conv) => (
+          {filtered.length === 0 && searchQuery.trim() && (
+            <p className="px-3 py-4 text-xs text-center text-muted-foreground">No conversations found</p>
+          )}
+          {filtered.map((conv) => (
             <div
               key={conv.id}
               onClick={() => handleSelect(conv)}
@@ -160,5 +181,53 @@ export function ChatSidebar({ currentConversationId, onSelect, onNew }: ChatSide
         </div>
       </ScrollArea>
     </div>
+  )
+
+  return (
+    <>
+      {/* Mobile toggle */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className={cn(
+          "fixed left-3 z-30 flex md:hidden glass",
+          mobileOpen && "z-[60]",
+        )}
+        style={{ top: "calc(0.75rem + 48px)" }}
+        onClick={() => setMobileOpen(!mobileOpen)}
+      >
+        <PanelLeft className="h-5 w-5" />
+      </Button>
+
+      {/* Mobile drawer */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+              onClick={() => setMobileOpen(false)}
+            />
+            <motion.div
+              initial={{ x: -300 }}
+              animate={{ x: 0 }}
+              exit={{ x: -300 }}
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              className="fixed left-0 top-0 z-50 h-full border-r border-white/5 md:hidden"
+            >
+              {sidebarContent}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Desktop sidebar */}
+      <div className="hidden md:flex border-r border-white/5">
+        {sidebarContent}
+      </div>
+    </>
   )
 }

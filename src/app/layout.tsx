@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Nexus AI",
-  description: "Your all-in-one AI platform for chat and image generation",
+  description: "AI-powered chat with web search, coding assistance, and research capabilities",
 }
 
 export default function RootLayout({

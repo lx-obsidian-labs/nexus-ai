@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { MessageSquare, Image, Settings, PanelLeftClose, PanelLeft, LogOut, Sparkles } from "lucide-react"
+import { MessageSquare, Settings, PanelLeftClose, PanelLeft, LogOut, Sparkles } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -29,7 +29,6 @@ interface SidebarProps {
 
 const navItems = [
   { href: "/chat", label: "Chat", icon: MessageSquare },
-  { href: "/images", label: "Images", icon: Image },
   { href: "/settings", label: "Settings", icon: Settings },
 ]
 

@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn, downloadAsFile, formatConversationAsMarkdown, formatConversationAsJson } from "@/lib/utils"
-import { Bot, Code2, Download, Globe, Briefcase } from "lucide-react"
+import { Bot, Code2, Download, Globe, Briefcase, MessageSquare } from "lucide-react"
 import type { Conversation, Message, ChatModel, ChatMode } from "@/types"
 
 const MODES: { value: ChatMode; label: string; icon: typeof Bot }[] = [
@@ -88,65 +88,67 @@ export default function ConversationPage() {
         />
         <div className="flex flex-1 flex-col">
           {conversation && (
-            <div className="glass border-b border-white/5 px-6 py-3 flex items-center justify-between shrink-0">
-              <ModelSelector
-                value={conversation.model as ChatModel}
-                onChange={handleModelChange}
-              />
-              <div className="flex items-center gap-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="gap-1.5 rounded-xl">
-                      <Download className="h-4 w-4" />
-                      Export
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="rounded-xl">
-                    <DropdownMenuItem className="rounded-lg" onClick={() => {
-                      const md = formatConversationAsMarkdown(
-                        conversation?.title ?? "Conversation",
-                        conversation?.model ?? "unknown",
-                        conversation?.created_at ?? new Date().toISOString(),
-                        messages.map(m => ({ role: m.role, content: m.content })),
-                      )
-                      downloadAsFile(md, `${conversation?.title ?? "conversation"}.md`)
-                    }}>
-                      Export as Markdown
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="rounded-lg" onClick={() => {
-                      const json = formatConversationAsJson(
-                        conversation?.title ?? "Conversation",
-                        conversation?.model ?? "unknown",
-                        conversation?.created_at ?? new Date().toISOString(),
-                        messages.map(m => ({ role: m.role, content: m.content })),
-                      )
-                      downloadAsFile(json, `${conversation?.title ?? "conversation"}.json`, "application/json")
-                    }}>
-                      Export as JSON
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-background/50 p-0.5">
-                  {MODES.map((m) => {
-                    const Icon = m.icon
-                    return (
-                      <Button
-                        key={m.value}
-                        variant="ghost"
-                        size="sm"
-                        className={cn("gap-1.5 rounded-lg", mode === m.value && "bg-background shadow-xs")}
-                        onClick={() => setMode(m.value)}
-                      >
-                        <Icon className="h-4 w-4" />
-                        <span className="hidden sm:inline">{m.label}</span>
+            <div className="glass border-b border-white/5 py-3 shrink-0 md:px-6 px-4 pl-14 md:pl-6">
+              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <ModelSelector
+                  value={conversation.model as ChatModel}
+                  onChange={handleModelChange}
+                />
+                <div className="flex items-center gap-2">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="gap-1.5 rounded-xl">
+                        <Download className="h-4 w-4" />
+                        Export
                       </Button>
-                    )
-                  })}
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="rounded-xl">
+                      <DropdownMenuItem className="rounded-lg" onClick={() => {
+                        const md = formatConversationAsMarkdown(
+                          conversation?.title ?? "Conversation",
+                          conversation?.model ?? "unknown",
+                          conversation?.created_at ?? new Date().toISOString(),
+                          messages.map(m => ({ role: m.role, content: m.content })),
+                        )
+                        downloadAsFile(md, `${conversation?.title ?? "conversation"}.md`)
+                      }}>
+                        Export as Markdown
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="rounded-lg" onClick={() => {
+                        const json = formatConversationAsJson(
+                          conversation?.title ?? "Conversation",
+                          conversation?.model ?? "unknown",
+                          conversation?.created_at ?? new Date().toISOString(),
+                          messages.map(m => ({ role: m.role, content: m.content })),
+                        )
+                        downloadAsFile(json, `${conversation?.title ?? "conversation"}.json`, "application/json")
+                      }}>
+                        Export as JSON
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-background/50 p-0.5">
+                    {MODES.map((m) => {
+                      const Icon = m.icon
+                      return (
+                        <Button
+                          key={m.value}
+                          variant="ghost"
+                          size="sm"
+                          className={cn("gap-1.5 rounded-lg", mode === m.value && "bg-background shadow-xs")}
+                          onClick={() => setMode(m.value)}
+                        >
+                          <Icon className="h-4 w-4" />
+                          <span className="hidden sm:inline">{m.label}</span>
+                        </Button>
+                      )
+                    })}
+                  </div>
                 </div>
               </div>
             </div>
           )}
-          <MessageList messages={messages} isStreaming={isStreaming} />
+          <MessageList messages={messages} isStreaming={isStreaming} mode={mode} />
           <ChatInput
             mode={mode}
             conversation={conversation}

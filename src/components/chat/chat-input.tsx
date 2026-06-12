@@ -260,6 +260,8 @@ export function ChatInput({
     }
   }, [input, isStreaming, conversation, messages, onMessagesChange, onStreamingChange, onConversationChange])
 
+  const placeholder = mode === "chat" ? "Type a message..." : mode === "coding" ? "Describe what you want to build..." : mode === "websearch" ? "Ask anything with web search..." : "Ask for research or planning..."
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
@@ -269,7 +271,7 @@ export function ChatInput({
 
   return (
     <div className="border-t border-white/5 bg-gradient-to-t from-background via-background to-transparent px-4 py-4 pt-6">
-      <div className="mx-auto flex max-w-3xl items-end gap-2">
+      <div className="mx-auto flex max-w-3xl flex-col gap-1.5">
         <div className="relative flex-1">
           <div className="glass rounded-2xl p-1">
             <Textarea
@@ -277,7 +279,7 @@ export function ChatInput({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Type a message..."
+              placeholder={placeholder}
               className="min-h-[48px] max-h-[200px] resize-none rounded-xl border-0 bg-transparent pr-12 pl-4 py-3 shadow-none transition-all placeholder:text-muted-foreground/50 focus-visible:ring-0 focus-visible:ring-offset-0"
               rows={1}
               disabled={isStreaming}
@@ -320,6 +322,9 @@ export function ChatInput({
             </>
           )}
         </div>
+        <p className="px-1 text-[11px] text-muted-foreground/40">
+          Press Enter to send &middot; Shift+Enter for new line
+        </p>
       </div>
     </div>
   )

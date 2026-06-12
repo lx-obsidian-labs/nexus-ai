@@ -1,7 +1,7 @@
 "use client"
 
 import { create } from "zustand"
-import type { Conversation, Message, ChatModel, ImageModel, GeneratedImage } from "@/types"
+import type { Conversation, Message, ChatModel } from "@/types"
 
 interface ChatState {
   conversations: Conversation[]
@@ -40,27 +40,5 @@ export const useChatStore = create<ChatState>((set) => ({
       return { messages }
     }),
   setIsStreaming: (isStreaming) => set({ isStreaming }),
-  setSelectedModel: (selectedModel) => set({ selectedModel }),
-}))
-
-interface ImageState {
-  images: GeneratedImage[]
-  isGenerating: boolean
-  selectedModel: ImageModel
-
-  setImages: (images: GeneratedImage[]) => void
-  addImage: (image: GeneratedImage) => void
-  setIsGenerating: (isGenerating: boolean) => void
-  setSelectedModel: (model: ImageModel) => void
-}
-
-export const useImageStore = create<ImageState>((set) => ({
-  images: [],
-  isGenerating: false,
-  selectedModel: "black-forest-labs/flux-schnell",
-
-  setImages: (images) => set({ images }),
-  addImage: (image) => set((state) => ({ images: [image, ...state.images] })),
-  setIsGenerating: (isGenerating) => set({ isGenerating }),
   setSelectedModel: (selectedModel) => set({ selectedModel }),
 }))

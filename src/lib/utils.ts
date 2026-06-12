@@ -37,15 +37,6 @@ export function generateId(): string {
   return crypto.randomUUID()
 }
 
-export function downloadImage(url: string, filename: string): void {
-  const a = document.createElement("a")
-  a.href = url
-  a.download = filename
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-}
-
 export function downloadAsFile(content: string, filename: string, type = "text/markdown"): void {
   const blob = new Blob([content], { type })
   const url = URL.createObjectURL(blob)
