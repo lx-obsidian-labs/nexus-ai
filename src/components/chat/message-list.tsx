@@ -1,9 +1,11 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useCallback, useState } from "react"
 import { MessageBubble } from "./message-bubble"
-import { MessageSquare, Bot, Globe, Briefcase, Code2 } from "lucide-react"
-import { motion } from "framer-motion"
+import { MessageSquare, Bot, Globe, Briefcase, Code2, ArrowDown } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 import type { Message, ChatMode } from "@/types"
 
 interface MessageListProps {
@@ -39,12 +41,43 @@ const emptyStates: Record<ChatMode, { icon: typeof Bot; title: string; desc: str
   },
 }
 
+function isNearBottom(element: HTMLElement, threshold = 100): boolean {
+  return element.scrollHeight - element.scrollTop - element.clientHeight < threshold
+}
+
 export function MessageList({ messages, isStreaming, mode = "chat" }: MessageListProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const userNearBottomRef = useRef(true)
+  const [showScrollBtn, setShowScrollBtn] = useState(false)
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+    const container = containerRef.current
+    if (!container) return
+    if (userNearBottomRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+    }
   }, [messages])
+
+  useEffect(() => {
+    if (isStreaming && userNearBottomRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+    }
+  }, [isStreaming])
+
+  const handleScroll = useCallback(() => {
+    const container = containerRef.current
+    if (!container) return
+    const near = isNearBottom(container)
+    userNearBottomRef.current = near
+    setShowScrollBtn(!near)
+  }, [])
+
+  const scrollToBottom = useCallback(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+    userNearBottomRef.current = true
+    setShowScrollBtn(false)
+  }, [])
 
   if (messages.length === 0) {
     const state = emptyStates[mode] || emptyStates.chat
@@ -78,27 +111,52 @@ export function MessageList({ messages, isStreaming, mode = "chat" }: MessageLis
   }
 
   return (
-    <div className="flex-1 overflow-y-auto">
-      <div className="mx-auto max-w-3xl space-y-4 px-4 py-6">
-        {messages.map((message) => (
-          <MessageBubble key={message.id} message={message} />
-        ))}
-        {isStreaming && (
+    <div className="relative flex-1 overflow-hidden">
+      <div
+        ref={containerRef}
+        onScroll={handleScroll}
+        className="h-full overflow-y-auto"
+      >
+        <div className="mx-auto max-w-3xl space-y-4 px-4 py-6">
+          {messages.map((message) => (
+            <MessageBubble key={message.id} message={message} />
+          ))}
+          {isStreaming && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex items-center gap-2 text-muted-foreground px-4 py-2"
+            >
+              <div className="flex gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" />
+                <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce [animation-delay:0.12s]" />
+                <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce [animation-delay:0.24s]" />
+              </div>
+              <span className="text-xs text-muted-foreground/60">Generating response...</span>
+            </motion.div>
+          )}
+          <div ref={bottomRef} />
+        </div>
+      </div>
+      <AnimatePresence>
+        {showScrollBtn && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex items-center gap-2 text-muted-foreground px-4 py-2"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="absolute bottom-4 left-1/2 -translate-x-1/2"
           >
-            <div className="flex gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" />
-              <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce [animation-delay:0.12s]" />
-              <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce [animation-delay:0.24s]" />
-            </div>
-            <span className="text-xs text-muted-foreground/60">Generating response...</span>
+            <Button
+              onClick={scrollToBottom}
+              size="sm"
+              className="h-8 rounded-full shadow-lg gap-1.5"
+            >
+              <ArrowDown className="h-3.5 w-3.5" />
+              New messages
+            </Button>
           </motion.div>
         )}
-        <div ref={bottomRef} />
-      </div>
+      </AnimatePresence>
     </div>
   )
 }

@@ -8,15 +8,24 @@ import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "@/hooks/use-toast"
 import { CHAT_MODELS } from "@/lib/constants"
-import { Settings2, User as UserIcon, Cpu, Sparkles } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { Settings2, User as UserIcon, Cpu, Sparkles, Moon, Sun, Monitor } from "lucide-react"
+import { useTheme } from "next-themes"
 import type { User } from "@supabase/supabase-js"
 import type { ChatModel } from "@/types"
+
+const THEMES = [
+  { value: "dark", label: "Dark", icon: Moon },
+  { value: "light", label: "Light", icon: Sun },
+  { value: "system", label: "System", icon: Monitor },
+]
 
 export default function SettingsPage() {
   const [user, setUser] = useState<User | null>(null)
   const [fullName, setFullName] = useState("")
   const [defaultChatModel, setDefaultChatModel] = useState<ChatModel>("meta/llama-3.1-70b-instruct")
   const [loading, setLoading] = useState(true)
+  const { theme, setTheme } = useTheme()
 
   useEffect(() => {
     const supabase = createClient()
@@ -51,6 +60,7 @@ export default function SettingsPage() {
     await supabase.from("user_settings").upsert({
       id: user!.id,
       default_chat_model: defaultChatModel,
+      theme,
     })
 
     if (fullName) {
@@ -147,6 +157,39 @@ export default function SettingsPage() {
                 <option key={m.value} value={m.value}>{m.label}</option>
               ))}
             </select>
+          </div>
+        </div>
+
+        <div className="glass-card p-6 space-y-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+              {theme === "dark" ? <Moon className="h-5 w-5 text-primary" /> : theme === "light" ? <Sun className="h-5 w-5 text-primary" /> : <Monitor className="h-5 w-5 text-primary" />}
+            </div>
+            <div>
+              <h2 className="font-semibold">Appearance</h2>
+              <p className="text-sm text-muted-foreground">Choose your theme preference</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            {THEMES.map((t) => {
+              const Icon = t.icon
+              const active = theme === t.value
+              return (
+                <button
+                  key={t.value}
+                  onClick={() => setTheme(t.value)}
+                  className={cn(
+                    "flex flex-col items-center gap-2 rounded-xl border p-4 transition-all duration-200",
+                    active
+                      ? "border-primary/50 bg-primary/10 shadow-sm shadow-primary/20"
+                      : "border-white/10 hover:border-white/20 hover:bg-white/5",
+                  )}
+                >
+                  <Icon className={cn("h-5 w-5", active ? "text-primary" : "text-muted-foreground")} />
+                  <span className={cn("text-xs font-medium", active ? "text-primary" : "text-muted-foreground")}>{t.label}</span>
+                </button>
+              )
+            })}
           </div>
         </div>
 

@@ -45,6 +45,20 @@ export function ChatInput({
     onStreamingChange(false)
   }, [onStreamingChange])
 
+  useEffect(() => {
+    function handleGlobalKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault()
+        textareaRef.current?.focus()
+      }
+      if (e.key === "Escape" && isStreaming) {
+        handleStop()
+      }
+    }
+    window.addEventListener("keydown", handleGlobalKeyDown)
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown)
+  }, [isStreaming, handleStop])
+
   const [improving, setImproving] = useState(false)
 
   const handleImprove = useCallback(async () => {
@@ -322,9 +336,14 @@ export function ChatInput({
             </>
           )}
         </div>
-        <p className="px-1 text-[11px] text-muted-foreground/40">
-          Press Enter to send &middot; Shift+Enter for new line
-        </p>
+        <div className="flex items-center justify-between px-1">
+          <p className="text-[11px] text-muted-foreground/40">
+            Enter to send &middot; Shift+Enter for new line
+          </p>
+          <p className="text-[11px] text-muted-foreground/30">
+            <kbd className="mx-0.5 rounded border border-white/10 px-1.5 py-0.5 text-[10px] font-mono">⌘K</kbd> focus
+          </p>
+        </div>
       </div>
     </div>
   )
