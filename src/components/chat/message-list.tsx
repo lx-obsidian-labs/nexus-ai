@@ -40,6 +40,12 @@ const emptyStates: Record<ChatMode, { icon: typeof Bot; title: string; desc: str
     desc: "Ask for market analysis, architecture planning, or strategic advice.",
     hints: ["Market analysis", "System architecture", "Business strategy", "Risk assessment"],
   },
+  agent: {
+    icon: Briefcase,
+    title: "Agent Mode",
+    desc: "I'll autonomously build, code, create files, and complete tasks for you.",
+    hints: ["Build a React app", "Create an API server", "Generate a full project", "Automate a workflow"],
+  },
 }
 
 function isNearBottom(element: HTMLElement, threshold = 100): boolean {

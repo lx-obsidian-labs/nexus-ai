@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { cn, downloadAsFile, formatConversationAsMarkdown, formatConversationAsJson } from "@/lib/utils"
 import { useChatStore } from "@/store"
-import { Bot, Code2, Download, Globe, Briefcase, FileCode } from "lucide-react"
+import { Bot, Code2, Download, Globe, Briefcase, FileCode, Wrench } from "lucide-react"
 import type { Conversation, Message, ChatModel, ChatMode } from "@/types"
 
 const MODES: { value: ChatMode; label: string; icon: typeof Bot }[] = [
@@ -23,6 +23,7 @@ const MODES: { value: ChatMode; label: string; icon: typeof Bot }[] = [
   { value: "coding", label: "Coding", icon: Code2 },
   { value: "websearch", label: "Web Search", icon: Globe },
   { value: "research", label: "Research", icon: Briefcase },
+  { value: "agent", label: "Agent", icon: Wrench },
 ]
 
 interface ChatViewProps {
@@ -45,6 +46,7 @@ export function ChatView({
   const [mode, setMode] = useState<ChatMode>("chat")
   const [isStreaming, setIsStreaming] = useState(false)
   const [filePanelOpen, setFilePanelOpen] = useState(false)
+  const [fileRefreshKey, setFileRefreshKey] = useState(0)
   const selectedModel = useChatStore((s) => s.selectedModel)
   const setSelectedModel = useChatStore((s) => s.setSelectedModel)
 
@@ -54,6 +56,8 @@ export function ChatView({
       onConversationChange({ ...conversation, model })
     }
   }
+
+  const isAgent = mode === "agent"
 
   return (
     <div className="flex h-full">
@@ -82,7 +86,7 @@ export function ChatView({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={cn("gap-1.5 rounded-xl", filePanelOpen && "bg-background shadow-xs")}
+                  className={cn("gap-1.5 rounded-xl", (filePanelOpen || isAgent) && "bg-background shadow-xs")}
                   onClick={() => setFilePanelOpen(!filePanelOpen)}
                 >
                   <FileCode className="h-4 w-4" />
@@ -126,13 +130,21 @@ export function ChatView({
               <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-background/50 p-0.5">
                 {MODES.map((m) => {
                   const Icon = m.icon
+                  const isActive = mode === m.value
                   return (
                     <Button
                       key={m.value}
                       variant="ghost"
                       size="sm"
-                      className={cn("gap-1.5 rounded-lg", mode === m.value && "bg-background shadow-xs")}
-                      onClick={() => setMode(m.value)}
+                      className={cn(
+                        "gap-1.5 rounded-lg",
+                        isActive && m.value === "agent" && "bg-amber-500/15 text-amber-400 shadow-xs",
+                        isActive && m.value !== "agent" && "bg-background shadow-xs",
+                      )}
+                      onClick={() => {
+                        setMode(m.value)
+                        if (m.value === "agent") setFilePanelOpen(true)
+                      }}
                     >
                       <Icon className="h-4 w-4" />
                       <span className="hidden sm:inline">{m.label}</span>
@@ -151,11 +163,13 @@ export function ChatView({
           onMessagesChange={onMessagesChange}
           onStreamingChange={setIsStreaming}
           onConversationChange={onConversationChange}
+          onFilesCreated={() => setFileRefreshKey((k) => k + 1)}
         />
       </div>
       <FilePanel
+        key={fileRefreshKey}
         conversationId={conversation?.id}
-        open={filePanelOpen}
+        open={filePanelOpen || isAgent}
         onToggle={() => setFilePanelOpen(!filePanelOpen)}
       />
     </div>

@@ -1,12 +1,40 @@
-import { streamChatCompletion, generateChatCompletion, resolveModel } from "@/lib/ai/chat"
-import { getToolsForModel, executeToolCall } from "@/lib/ai/tools"
+import { streamChatCompletion, generateChatCompletion, resolveModel, MODEL_FALLBACK_CHAIN } from "@/lib/ai/chat"
+import { getToolsForModel, executeToolCall, FILE_TOOL_CALLS } from "@/lib/ai/tools"
 import { withRateLimit } from "@/lib/rate-limit"
 import { createClient } from "@/lib/supabase/server"
-import { unauthorized, badRequest, serverError, validate } from "@/lib/api-utils"
+import { unauthorized, serverError, validate } from "@/lib/api-utils"
 import { chatRequestSchema } from "@/lib/validators"
 import type { ChatModel, ChatMode, Message, ToolCall } from "@/types"
 
 const MAX_TOOL_ROUNDS = 5
+const MODEL_TIMEOUT_MS = 60000
+
+async function tryGenerateWithFallback(
+  model: ChatModel,
+  messages: Pick<Message, "role" | "content">[],
+  tools: unknown[] | undefined,
+  mode: ChatMode,
+): Promise<{ content: string | null; toolCalls: any[] | null; modelUsed: ChatModel }> {
+  const fallbacks = MODEL_FALLBACK_CHAIN.filter((m) => m !== model).slice(0, 2)
+
+  for (const candidate of [model, ...fallbacks]) {
+    try {
+      const result = await Promise.race([
+            generateChatCompletion(candidate, messages, { tools }),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error(`Model ${candidate} timed out`)), MODEL_TIMEOUT_MS),
+            ),
+          ])
+          return { content: result.content, toolCalls: result.toolCalls ?? null, modelUsed: candidate }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Unknown error"
+      if (candidate === model) continue
+      return { content: `[${candidate} failed: ${msg}]`, toolCalls: null, modelUsed: candidate }
+    }
+  }
+
+  return { content: null, toolCalls: null, modelUsed: model }
+}
 
 export async function POST(request: Request) {
   return withRateLimit(
@@ -25,20 +53,18 @@ export async function POST(request: Request) {
         const parsed = validate(chatRequestSchema, body)
         if (parsed.error) return parsed.error
 
-        const { model, messages, mode } = parsed.data
+        const { model, messages, mode } = parsed.data as { model: ChatModel; messages: any[]; mode: ChatMode }
 
-        const resolvedModel = resolveModel(model as ChatModel, messages as Pick<Message, "content" | "role">[], (mode as ChatMode) ?? "chat")
-        const tools = getToolsForModel(resolvedModel)
+        const resolvedModel = resolveModel(model, messages, mode ?? "chat")
+        const tools = getToolsForModel(resolvedModel, mode)
 
-        let currentMessages = [...messages]
+        FILE_TOOL_CALLS.length = 0
+
+        let currentMessages: any[] = [...messages]
         let toolRounds = 0
 
         while (toolRounds < MAX_TOOL_ROUNDS) {
-          const result = await generateChatCompletion(
-            resolvedModel,
-            currentMessages,
-            { tools: tools.length > 0 ? tools : undefined },
-          )
+          const result = await tryGenerateWithFallback(resolvedModel, currentMessages, tools.length > 0 ? tools : undefined, mode)
 
           if (!result.toolCalls || result.toolCalls.length === 0) {
             currentMessages.push({ role: "assistant", content: result.content ?? "" })
@@ -72,15 +98,16 @@ export async function POST(request: Request) {
                 const data = JSON.stringify({ content: lastAssistantMsg.content })
                 controller.enqueue(encoder.encode(`data: ${data}\n\n`))
               } else {
-                const generator = streamChatCompletion(
-                  resolvedModel,
-                  currentMessages,
-                )
-
+                const generator = streamChatCompletion(resolvedModel, currentMessages)
                 for await (const chunk of generator) {
                   const data = JSON.stringify({ content: chunk })
                   controller.enqueue(encoder.encode(`data: ${data}\n\n`))
                 }
+              }
+
+              for (const file of FILE_TOOL_CALLS) {
+                const data = JSON.stringify({ file_created: file })
+                controller.enqueue(encoder.encode(`data: ${data}\n\n`))
               }
 
               controller.enqueue(encoder.encode("data: [DONE]\n\n"))

@@ -31,13 +31,13 @@ export const chatMessageSchema = z.object({
   content: z.string().min(1, "Message cannot be empty").max(10000, "Message too long"),
   conversationId: z.string().uuid().optional(),
   model: modelEnum,
-  mode: z.enum(["chat", "coding", "websearch", "research"]).optional(),
+  mode: z.enum(["chat", "coding", "websearch", "research", "agent"]).optional(),
 })
 
 export const chatRequestSchema = z.object({
   model: modelEnum,
   messages: z.array(messageSchema).min(1).max(100, "Too many messages"),
-  mode: z.enum(["chat", "coding", "websearch", "research"]).optional(),
+  mode: z.enum(["chat", "coding", "websearch", "research", "agent"]).optional(),
 })
 
 export const fileCreateSchema = z.object({

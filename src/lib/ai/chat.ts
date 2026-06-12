@@ -38,11 +38,15 @@ export function resolveModel(model: ChatModel, messages: Pick<Message, "role" | 
   }
 
   if (mode === "websearch") {
-    return "meta/llama-3.1-70b-instruct"
+    return "google/diffusiongemma-26b-a4b-it"
   }
 
   if (mode === "research") {
-    return "mistralai/mistral-large"
+    return "google/diffusiongemma-26b-a4b-it"
+  }
+
+  if (mode === "agent") {
+    return "nvidia/nemotron-3-ultra-550b-a55b"
   }
 
   const codingScore = CODING_KEYWORDS.filter((k) => text.includes(k)).length
@@ -65,7 +69,7 @@ export function resolveModel(model: ChatModel, messages: Pick<Message, "role" | 
     return "microsoft/phi-3-medium-128k-instruct"
   }
 
-  return "meta/llama-3.1-70b-instruct"
+  return "google/diffusiongemma-26b-a4b-it"
 }
 
 interface NVCFRequest {
@@ -218,8 +222,36 @@ export async function* streamChatCompletion(
   }
 }
 
+export const MODEL_FALLBACK_CHAIN: ChatModel[] = [
+  "nvidia/nemotron-3-ultra-550b-a55b",
+  "google/diffusiongemma-26b-a4b-it",
+  "meta/llama-3.1-70b-instruct",
+  "meta/llama-3.1-8b-instruct",
+  "mistralai/mistral-large",
+]
+
 export function getDefaultSystemPrompt(): string {
   return `You are Nexus AI, a helpful and knowledgeable AI assistant. You provide accurate, thoughtful, and well-reasoned responses. You support markdown formatting in your responses.`
+}
+
+export function getAgentSystemPrompt(): string {
+  return `You are Nexus AI Agent — an autonomous coding and task-completion agent.
+
+Your capabilities:
+- Write, debug, and refactor code in any language
+- Create files using the \`create_file\` tool — ALWAYS use this whenever you write code
+- Search the web for up-to-date information
+- Perform calculations and data analysis
+- Plan and execute multi-step tasks independently
+
+Rules:
+1. When you write code, ALWAYS save it as a file using \`create_file\`. Do not just show the code — save it.
+2. Use descriptive filenames with proper extensions (e.g. \`server.ts\`, \`App.tsx\`, \`main.py\`).
+3. For multi-file projects, save each file separately with its correct filename.
+4. After creating files, summarize what was created and where.
+5. You can chain multiple tool calls to accomplish complex tasks.
+6. Think step by step and use the right tool for each sub-task.
+7. Always provide clear explanations alongside your code.`
 }
 
 export function getCodingSystemPrompt(): string {

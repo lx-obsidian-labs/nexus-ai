@@ -144,3 +144,23 @@ export async function saveMessage(
 
   return data
 }
+
+export async function saveFile(
+  conversationId: string,
+  filename: string,
+  content: string,
+  language: string,
+) {
+  const userId = await getUserId()
+  await verifyConversationOwnership(conversationId, userId)
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from("generated_files")
+    .insert({ conversation_id: conversationId, user_id: userId, filename, content, language })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}

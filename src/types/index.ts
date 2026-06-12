@@ -10,8 +10,10 @@ export type ChatModel =
   | "google/gemma-2-27b-it"
   | "microsoft/phi-3-medium-128k-instruct"
   | "nvidia/nemotron-3-super-120b-a12b"
+  | "google/diffusiongemma-26b-a4b-it"
+  | "nvidia/nemotron-3-ultra-550b-a55b"
 
-export type ChatMode = "chat" | "coding" | "websearch" | "research"
+export type ChatMode = "chat" | "coding" | "websearch" | "research" | "agent"
 
 export type MessageRole = "user" | "assistant" | "system" | "tool"
 

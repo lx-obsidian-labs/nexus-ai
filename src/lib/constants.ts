@@ -13,8 +13,10 @@ export const CHAT_MODELS: { value: ChatModel; label: string; provider: string }[
   { value: "qwen/qwen2.5-72b-instruct", label: "Qwen 2.5 72B", provider: "Qwen" },
   { value: "minimaxai/minimax-m2.7", label: "MiniMax M2.7", provider: "MiniMax" },
   { value: "google/gemma-2-27b-it", label: "Gemma 2 27B", provider: "Google" },
+  { value: "google/diffusiongemma-26b-a4b-it", label: "DiffusionGemma 26B", provider: "Google" },
   { value: "microsoft/phi-3-medium-128k-instruct", label: "Phi-3 Medium 128K", provider: "Microsoft" },
   { value: "nvidia/nemotron-3-super-120b-a12b", label: "Nemotron Super 120B", provider: "NVIDIA" },
+  { value: "nvidia/nemotron-3-ultra-550b-a55b", label: "Nemotron Ultra 550B", provider: "NVIDIA" },
 ]
 
 export const AUTO_MODEL = "auto" as ChatModel

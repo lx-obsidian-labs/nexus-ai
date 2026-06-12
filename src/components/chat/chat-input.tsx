@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { ArrowUp, StopCircle, Sparkles } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { generateId } from "@/lib/utils"
-import { getDefaultSystemPrompt, getCodingSystemPrompt, getWebSearchSystemPrompt, getResearchSystemPrompt } from "@/lib/ai/chat"
+import { getDefaultSystemPrompt, getCodingSystemPrompt, getWebSearchSystemPrompt, getResearchSystemPrompt, getAgentSystemPrompt } from "@/lib/ai/chat"
 import { toast } from "@/hooks/use-toast"
 import type { Conversation, Message, ChatModel, ChatMode } from "@/types"
 
@@ -17,6 +17,7 @@ interface ChatInputProps {
   onMessagesChange: (messages: Message[]) => void
   onStreamingChange: (isStreaming: boolean) => void
   onConversationChange: (conversation: Conversation) => void
+  onFilesCreated?: () => void
 }
 
 export function ChatInput({
@@ -26,6 +27,7 @@ export function ChatInput({
   onMessagesChange,
   onStreamingChange,
   onConversationChange,
+  onFilesCreated,
 }: ChatInputProps) {
   const [input, setInput] = useState("")
   const [isStreaming, setIsStreaming] = useState(false)
@@ -177,6 +179,7 @@ export function ChatInput({
       if (mode === "coding") systemPrompt = getCodingSystemPrompt()
       else if (mode === "websearch") systemPrompt = getWebSearchSystemPrompt()
       else if (mode === "research") systemPrompt = getResearchSystemPrompt()
+      else if (mode === "agent") systemPrompt = getAgentSystemPrompt()
 
       let searchContext = ""
       if (mode === "websearch") {
@@ -240,6 +243,10 @@ export function ChatInput({
                 streamError = parsed.error
                 continue
               }
+              if (parsed.file_created) {
+                onFilesCreated?.()
+                continue
+              }
               fullContent += parsed.content ?? ""
               onMessagesChange(
                 updatedMessages.map((m) =>
@@ -274,7 +281,7 @@ export function ChatInput({
     }
   }, [input, isStreaming, conversation, messages, onMessagesChange, onStreamingChange, onConversationChange])
 
-  const placeholder = mode === "chat" ? "Type a message..." : mode === "coding" ? "Describe what you want to build..." : mode === "websearch" ? "Ask anything with web search..." : "Ask for research or planning..."
+  const placeholder = mode === "chat" ? "Type a message..." : mode === "coding" ? "Describe what you want to build..." : mode === "websearch" ? "Ask anything with web search..." : mode === "research" ? "Ask for research or planning..." : "Describe what you want me to build..."
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
