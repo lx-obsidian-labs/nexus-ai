@@ -1,11 +1,12 @@
 "use client"
 
+import { useState } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import rehypeHighlight from "rehype-highlight"
 import { motion } from "framer-motion"
 import { cn, formatRelativeTime } from "@/lib/utils"
-import { Sparkles, User } from "lucide-react"
+import { Sparkles, User, Terminal, ChevronDown, ChevronRight, Loader2 } from "lucide-react"
 import { CodeBlock } from "./code-block"
 import type { Message } from "@/types"
 
@@ -16,6 +17,58 @@ interface MessageBubbleProps {
 
 export function MessageBubble({ message, conversationId }: MessageBubbleProps) {
   const isUser = message.role === "user"
+  const isTool = message.role === "tool"
+  const [toolOpen, setToolOpen] = useState(false)
+
+  if (isTool) {
+    const toolName = (message.metadata as { tool_name?: string })?.tool_name ?? "tool"
+    const status = (message.metadata as { status?: string })?.status ?? "done"
+    const isRunning = status === "running"
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2 }}
+        className="flex gap-3"
+      >
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
+          <Terminal className="h-4 w-4" />
+        </div>
+        <div className="flex max-w-[80%] flex-col">
+          <div
+            className="rounded-xl border border-emerald-500/10 bg-emerald-500/5 px-3 py-2 text-xs leading-relaxed cursor-pointer select-none"
+            onClick={() => !isRunning && setToolOpen(!toolOpen)}
+          >
+            <div className="flex items-center gap-2 text-emerald-500/80">
+              {isRunning ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : toolOpen ? (
+                <ChevronDown className="h-3 w-3" />
+              ) : (
+                <ChevronRight className="h-3 w-3" />
+              )}
+              <span className="font-mono font-medium">{toolName}</span>
+              {isRunning && <span className="text-emerald-500/60 animate-pulse">running...</span>}
+            </div>
+            {!isRunning && toolOpen && message.content && (
+              <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all font-mono text-[11px] text-muted-foreground leading-relaxed">
+                {message.content.length > 2000 ? message.content.slice(0, 2000) + "\n\n[... truncated]" : message.content}
+              </pre>
+            )}
+            {!isRunning && !toolOpen && message.content && (
+              <div className="mt-1.5 truncate text-[11px] text-muted-foreground/60 font-mono">
+                {message.content.slice(0, 80)}{message.content.length > 80 ? "..." : ""}
+              </div>
+            )}
+          </div>
+          <span className="mt-1 px-1 text-[10px] text-muted-foreground/50">
+            {formatRelativeTime(message.created_at)}
+          </span>
+        </div>
+      </motion.div>
+    )
+  }
 
   return (
     <motion.div

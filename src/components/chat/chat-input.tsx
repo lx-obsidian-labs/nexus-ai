@@ -234,6 +234,7 @@ export function ChatInput({
       const decoder = new TextDecoder()
       let fullContent = ""
       let streamError: string | null = null
+      const pendingToolIds: { tool_call_id: string; msgId: string }[] = []
 
       while (true) {
         const { done, value } = await reader.read()
@@ -254,6 +255,42 @@ export function ChatInput({
               }
               if (parsed.file_created) {
                 onFilesCreated?.()
+                continue
+              }
+              if (parsed.tool_start) {
+                const { name, id } = parsed.tool_start
+                const toolMsg: Message = {
+                  id: generateId(),
+                  conversation_id: convId,
+                  role: "tool",
+                  content: "",
+                  tool_call_id: id,
+                  metadata: { tool_name: name, status: "running" },
+                  created_at: new Date().toISOString(),
+                }
+                pendingToolIds.push({ tool_call_id: id, msgId: toolMsg.id })
+                onMessagesChange([...updatedMessages, toolMsg])
+                continue
+              }
+              if (parsed.tool_end) {
+                const { name, id, content } = parsed.tool_end
+                const pending = pendingToolIds.find((p) => p.tool_call_id === id)
+                if (pending) {
+                  const toolMsgId = pending.msgId
+                  await supabase.from("messages").insert({
+                    id: toolMsgId,
+                    conversation_id: convId,
+                    role: "tool",
+                    content: content || "",
+                    tool_call_id: id,
+                    metadata: JSON.stringify({ tool_name: name }),
+                  })
+                  onMessagesChange(
+                    updatedMessages.map((m) =>
+                      m.id === toolMsgId ? { ...m, content: content || "", metadata: { tool_name: name, status: "done" } } : m,
+                    ),
+                  )
+                }
                 continue
               }
               fullContent += parsed.content ?? ""

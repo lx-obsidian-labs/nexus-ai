@@ -1,0 +1,10 @@
+{
+  "[sql]": {
+    "editor.defaultFormatter": "supabase.vscode-sql-formatter",
+    "editor.formatOnSave": true
+  },
+  "mssql.connections": [],
+  "files.associations": {
+    "*.sql": "sql"
+  }
+}

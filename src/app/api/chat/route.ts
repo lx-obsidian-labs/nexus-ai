@@ -63,67 +63,76 @@ export async function POST(request: Request) {
         const parsed = validate(chatRequestSchema, body)
         if (parsed.error) return parsed.error
 
-        const { model, messages, mode, conversation_id } = parsed.data as { model: ChatModel; messages: ApiMessage[]; mode: ChatMode; conversation_id?: string }
+        const { model, messages, mode } = parsed.data as { model: ChatModel; messages: ApiMessage[]; mode: ChatMode }
 
         const resolvedModel = resolveModel(model, messages, mode ?? "chat")
         const tools = getToolsForModel(resolvedModel, mode)
-        const convId = conversation_id || ""
 
         const createdFiles: { filename: string; content: string; language: string }[] = []
-        const toolMessages: { tool_call_id: string; name: string; content: string }[] = []
         let currentMessages: ApiMessage[] = messages.map(toApiMessage)
-        let toolRounds = 0
-
-        while (toolRounds < MAX_TOOL_ROUNDS) {
-          const result = await tryGenerateWithFallback(resolvedModel, currentMessages, tools.length > 0 ? tools : undefined, mode)
-
-          if (!result.toolCalls || result.toolCalls.length === 0) {
-            currentMessages.push({ role: "assistant", content: result.content ?? "" })
-            break
-          }
-
-          currentMessages.push({
-            role: "assistant",
-            content: result.content ?? "",
-            tool_calls: result.toolCalls,
-          })
-
-          const toolResults = await Promise.all(
-            result.toolCalls.map(async (tc: ToolCall) => {
-              const toolResult = await Promise.race([
-                executeToolCall(tc),
-                new Promise<ExecuteToolCallResult>((_, reject) =>
-                  setTimeout(() => reject(new Error(`Tool ${tc.function.name} timed out`)), TOOL_TIMEOUT_MS),
-                ),
-              ])
-              return { tc, toolResult }
-            }),
-          )
-
-          for (const { tc, toolResult } of toolResults) {
-            currentMessages.push({
-              role: "tool",
-              tool_call_id: tc.id,
-              content: toolResult.content,
-            })
-            if (toolResult.file) {
-              createdFiles.push(toolResult.file)
-            }
-          }
-
-          toolRounds++
-        }
 
         const encoder = new TextEncoder()
+
+        function send(event: Record<string, unknown>) {
+          return encoder.encode(`data: ${JSON.stringify(event)}\n\n`)
+        }
+
         const stream = new ReadableStream({
           async start(controller) {
             try {
+              let toolRounds = 0
+
+              while (toolRounds < MAX_TOOL_ROUNDS) {
+                const result = await tryGenerateWithFallback(resolvedModel, currentMessages, tools.length > 0 ? tools : undefined, mode)
+
+                if (!result.toolCalls || result.toolCalls.length === 0) {
+                  currentMessages.push({ role: "assistant", content: result.content ?? "" })
+                  break
+                }
+
+                currentMessages.push({
+                  role: "assistant",
+                  content: result.content ?? "",
+                  tool_calls: result.toolCalls,
+                })
+
+                for (const tc of result.toolCalls) {
+                  controller.enqueue(send({ tool_start: { name: tc.function.name, id: tc.id } }))
+                }
+
+                const toolResults = await Promise.all(
+                  result.toolCalls.map(async (tc: ToolCall) => {
+                    const toolResult = await Promise.race([
+                      executeToolCall(tc),
+                      new Promise<ExecuteToolCallResult>((_, reject) =>
+                        setTimeout(() => reject(new Error(`Tool ${tc.function.name} timed out`)), TOOL_TIMEOUT_MS),
+                      ),
+                    ])
+                    return { tc, toolResult }
+                  }),
+                )
+
+                for (const { tc, toolResult } of toolResults) {
+                  currentMessages.push({
+                    role: "tool",
+                    tool_call_id: tc.id,
+                    content: toolResult.content,
+                  })
+                  controller.enqueue(send({
+                    tool_end: { name: tc.function.name, id: tc.id, content: toolResult.content },
+                  }))
+                  if (toolResult.file) {
+                    createdFiles.push(toolResult.file)
+                  }
+                }
+
+                toolRounds++
+              }
+
               const lastAssistantMsg = currentMessages[currentMessages.length - 1]
-              let finalContent = ""
 
               if (lastAssistantMsg?.role === "assistant" && lastAssistantMsg.content) {
-                finalContent = lastAssistantMsg.content
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: finalContent })}\n\n`))
+                controller.enqueue(send({ content: lastAssistantMsg.content }))
               } else {
                 const summaryMessages = currentMessages.slice()
                 summaryMessages.push({
@@ -132,18 +141,17 @@ export async function POST(request: Request) {
                 })
                 const generator = streamChatCompletion(resolvedModel, summaryMessages)
                 for await (const chunk of generator) {
-                  finalContent += chunk
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: chunk })}\n\n`))
+                  controller.enqueue(send({ content: chunk }))
                 }
               }
 
               for (const file of createdFiles) {
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ file_created: file })}\n\n`))
+                controller.enqueue(send({ file_created: file }))
               }
 
               controller.enqueue(encoder.encode("data: [DONE]\n\n"))
             } catch (error) {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: error instanceof Error ? error.message : "Stream failed" })}\n\n`))
+              controller.enqueue(send({ error: error instanceof Error ? error.message : "Stream failed" }))
             } finally {
               controller.close()
             }
