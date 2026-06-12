@@ -235,6 +235,12 @@ export function ChatInput({
       let fullContent = ""
       let streamError: string | null = null
       const pendingToolIds: { tool_call_id: string; msgId: string }[] = []
+      let toolMessages: Message[] = []
+
+      function buildMessages(): Message[] {
+        const base = updatedMessages.filter((m) => m.role !== "tool")
+        return [...base, ...toolMessages]
+      }
 
       while (true) {
         const { done, value } = await reader.read()
@@ -269,7 +275,8 @@ export function ChatInput({
                   created_at: new Date().toISOString(),
                 }
                 pendingToolIds.push({ tool_call_id: id, msgId: toolMsg.id })
-                onMessagesChange([...updatedMessages, toolMsg])
+                toolMessages = [...toolMessages, toolMsg]
+                onMessagesChange(buildMessages())
                 continue
               }
               if (parsed.tool_end) {
@@ -285,17 +292,16 @@ export function ChatInput({
                     tool_call_id: id,
                     metadata: JSON.stringify({ tool_name: name }),
                   })
-                  onMessagesChange(
-                    updatedMessages.map((m) =>
-                      m.id === toolMsgId ? { ...m, content: content || "", metadata: { tool_name: name, status: "done" } } : m,
-                    ),
+                  toolMessages = toolMessages.map((m) =>
+                    m.id === toolMsgId ? { ...m, content: content || "", metadata: { tool_name: name, status: "done" } } : m,
                   )
+                  onMessagesChange(buildMessages())
                 }
                 continue
               }
               fullContent += parsed.content ?? ""
               onMessagesChange(
-                updatedMessages.map((m) =>
+                buildMessages().map((m) =>
                   m.id === assistantMessage.id ? { ...m, content: fullContent } : m,
                 ),
               )
