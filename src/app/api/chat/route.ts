@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server"
-import { streamChatCompletion, resolveModel } from "@/lib/ai/chat"
+import { streamChatCompletion, generateChatCompletion, resolveModel } from "@/lib/ai/chat"
+import { getToolsForModel, executeToolCall } from "@/lib/ai/tools"
 import { withRateLimit } from "@/lib/rate-limit"
 import { createClient } from "@/lib/supabase/server"
-import type { ChatModel, ChatMode } from "@/types"
+import type { ChatModel, ChatMode, ToolCall } from "@/types"
+
+const MAX_TOOL_ROUNDS = 5
 
 export async function POST(request: Request) {
   return withRateLimit(
@@ -27,19 +30,59 @@ export async function POST(request: Request) {
         }
 
         const resolvedModel = resolveModel(model as ChatModel, messages, (mode as ChatMode) ?? "chat")
+        const tools = getToolsForModel(resolvedModel)
+
+        let currentMessages = [...messages]
+        let toolRounds = 0
+
+        while (toolRounds < MAX_TOOL_ROUNDS) {
+          const result = await generateChatCompletion(
+            resolvedModel,
+            currentMessages,
+            { tools: tools.length > 0 ? tools : undefined },
+          )
+
+          if (!result.toolCalls || result.toolCalls.length === 0) {
+            currentMessages.push({ role: "assistant", content: result.content ?? "" })
+            break
+          }
+
+          currentMessages.push({
+            role: "assistant",
+            content: result.content ?? null,
+            tool_calls: result.toolCalls,
+          })
+
+          for (const tc of result.toolCalls) {
+            const toolResult = await executeToolCall(tc as ToolCall)
+            currentMessages.push({
+              role: "tool",
+              tool_call_id: tc.id,
+              content: toolResult,
+            })
+          }
+
+          toolRounds++
+        }
 
         const encoder = new TextEncoder()
         const stream = new ReadableStream({
           async start(controller) {
             try {
-              const generator = streamChatCompletion(
-                resolvedModel,
-                messages,
-              )
-
-              for await (const chunk of generator) {
-                const data = JSON.stringify({ content: chunk })
+              const lastAssistantMsg = currentMessages[currentMessages.length - 1]
+              if (lastAssistantMsg?.role === "assistant" && lastAssistantMsg.content) {
+                const data = JSON.stringify({ content: lastAssistantMsg.content })
                 controller.enqueue(encoder.encode(`data: ${data}\n\n`))
+              } else {
+                const generator = streamChatCompletion(
+                  resolvedModel,
+                  currentMessages,
+                )
+
+                for await (const chunk of generator) {
+                  const data = JSON.stringify({ content: chunk })
+                  controller.enqueue(encoder.encode(`data: ${data}\n\n`))
+                }
               }
 
               controller.enqueue(encoder.encode("data: [DONE]\n\n"))

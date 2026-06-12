@@ -64,3 +64,18 @@ export interface ChatStreamChunk {
   content: string
   done: boolean
 }
+
+export interface ToolCall {
+  id: string
+  type: "function"
+  function: {
+    name: string
+    arguments: string
+  }
+}
+
+export interface ToolMessage {
+  role: "tool"
+  tool_call_id: string
+  content: string
+}

@@ -75,18 +75,29 @@ interface NVCFRequest {
   top_p?: number
   max_tokens?: number
   stream?: boolean
+  tools?: unknown[]
+  tool_choice?: string
+}
+
+interface NVCFResponseMessage {
+  role: string
+  content: string | null
+  tool_calls?: {
+    id: string
+    type: "function"
+    function: { name: string; arguments: string }
+  }[]
+}
+
+interface NVCFResponseChoice {
+  index: number
+  message: NVCFResponseMessage
+  finish_reason: string
 }
 
 interface NVCFResponse {
-  choices: {
-    index: number
-    message: {
-      role: string
-      content: string
-    }
-    finish_reason: string
-  }[]
-  usage: {
+  choices: NVCFResponseChoice[]
+  usage?: {
     prompt_tokens: number
     completion_tokens: number
     total_tokens: number
@@ -96,8 +107,8 @@ interface NVCFResponse {
 export async function generateChatCompletion(
   model: ChatModel,
   messages: Pick<Message, "role" | "content">[],
-  options?: { temperature?: number; maxTokens?: number },
-): Promise<{ content: string; usage: { promptTokens: number; completionTokens: number } }> {
+  options?: { temperature?: number; maxTokens?: number; tools?: unknown[] },
+): Promise<{ content: string | null; toolCalls: NVCFResponseMessage["tool_calls"] | null; usage: { promptTokens: number; completionTokens: number } }> {
   if (!NVIDIA_API_KEY) {
     throw new Error("NVIDIA NIM API key is not configured")
   }
@@ -108,6 +119,11 @@ export async function generateChatCompletion(
     temperature: options?.temperature ?? 0.7,
     max_tokens: options?.maxTokens ?? 2048,
     stream: false,
+  }
+
+  if (options?.tools && options.tools.length > 0) {
+    body.tools = options.tools
+    body.tool_choice = "auto"
   }
 
   const response = await fetch(CHAT_API_URL, {
@@ -124,9 +140,11 @@ export async function generateChatCompletion(
   }
 
   const data: NVCFResponse = await response.json()
+  const message = data.choices[0]?.message
 
   return {
-    content: data.choices[0]?.message?.content ?? "",
+    content: message?.content ?? null,
+    toolCalls: message?.tool_calls ?? null,
     usage: {
       promptTokens: data.usage?.prompt_tokens ?? 0,
       completionTokens: data.usage?.completion_tokens ?? 0,
