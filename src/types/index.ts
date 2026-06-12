@@ -13,7 +13,7 @@ export type ChatModel =
 
 export type ChatMode = "chat" | "coding" | "websearch" | "research"
 
-export type MessageRole = "user" | "assistant" | "system"
+export type MessageRole = "user" | "assistant" | "system" | "tool"
 
 export interface Profile {
   id: string

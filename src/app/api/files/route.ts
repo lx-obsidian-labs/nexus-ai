@@ -1,27 +1,29 @@
-import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { unauthorized, badRequest, serverError, ok, validate } from "@/lib/api-utils"
+import { fileCreateSchema } from "@/lib/validators"
 
 export async function POST(request: Request) {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (!user) return unauthorized()
 
-    const { conversation_id, filename, content, language } = await request.json()
-    if (!conversation_id || !filename || content === undefined) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
-    }
+    const body = await request.json()
+    const parsed = validate(fileCreateSchema, body)
+    if (parsed.error) return parsed.error
+
+    const { conversation_id, filename, content, language } = parsed.data
 
     const { data, error } = await supabase
       .from("generated_files")
-      .insert({ conversation_id, user_id: user.id, filename, content, language: language ?? "" })
+      .insert({ conversation_id, user_id: user.id, filename, content, language })
       .select()
       .single()
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    return NextResponse.json(data)
+    if (error) return serverError(error.message)
+    return ok(data)
   } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return serverError()
   }
 }
 
@@ -29,11 +31,11 @@ export async function GET(request: Request) {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (!user) return unauthorized()
 
     const { searchParams } = new URL(request.url)
     const conversationId = searchParams.get("conversation_id")
-    if (!conversationId) return NextResponse.json({ error: "Missing conversation_id" }, { status: 400 })
+    if (!conversationId) return badRequest("Missing conversation_id")
 
     const { data, error } = await supabase
       .from("generated_files")
@@ -42,9 +44,9 @@ export async function GET(request: Request) {
       .eq("user_id", user.id)
       .order("created_at", { ascending: true })
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    return NextResponse.json(data ?? [])
+    if (error) return serverError(error.message)
+    return ok(data ?? [])
   } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return serverError()
   }
 }

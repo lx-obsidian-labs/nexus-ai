@@ -1,29 +1,22 @@
-import { NextResponse } from "next/server"
 import { webSearch } from "@/lib/search"
+import { badRequest, serverError, ok, validate } from "@/lib/api-utils"
+import { searchRequestSchema } from "@/lib/validators"
 
 export async function POST(request: Request) {
   try {
-    const { query } = await request.json()
+    const body = await request.json()
 
-    if (!query || typeof query !== "string" || query.trim().length === 0) {
-      return NextResponse.json({ error: "Query is required" }, { status: 400 })
-    }
+    const parsed = validate(searchRequestSchema, body)
+    if (parsed.error) return parsed.error
 
-    if (query.length > 500) {
-      return NextResponse.json({ error: "Query too long" }, { status: 400 })
-    }
-
-    const result = await webSearch(query.trim())
+    const result = await webSearch(parsed.data.query.trim())
 
     if (result.error) {
-      return NextResponse.json({ error: result.error, results: [] }, { status: 200 })
+      return ok({ error: result.error, results: [] })
     }
 
-    return NextResponse.json({ results: result.results })
-  } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Search failed" },
-      { status: 500 },
-    )
+    return ok({ results: result.results })
+  } catch {
+    return serverError()
   }
 }

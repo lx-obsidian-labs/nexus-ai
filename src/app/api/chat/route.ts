@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server"
 import { streamChatCompletion, generateChatCompletion, resolveModel } from "@/lib/ai/chat"
 import { getToolsForModel, executeToolCall } from "@/lib/ai/tools"
 import { withRateLimit } from "@/lib/rate-limit"
 import { createClient } from "@/lib/supabase/server"
-import type { ChatModel, ChatMode, ToolCall } from "@/types"
+import { unauthorized, badRequest, serverError, validate } from "@/lib/api-utils"
+import { chatRequestSchema } from "@/lib/validators"
+import type { ChatModel, ChatMode, Message, ToolCall } from "@/types"
 
 const MAX_TOOL_ROUNDS = 5
 
@@ -16,20 +17,17 @@ export async function POST(request: Request) {
         const { data: { user } } = await supabase.auth.getUser()
 
         if (!user) {
-          return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+          return unauthorized()
         }
 
-        const { model, messages, mode } = await request.json()
+        const body = await request.json()
 
-        if (!model || !messages || !Array.isArray(messages)) {
-          return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
-        }
+        const parsed = validate(chatRequestSchema, body)
+        if (parsed.error) return parsed.error
 
-        if (messages.length > 100) {
-          return NextResponse.json({ error: "Too many messages" }, { status: 400 })
-        }
+        const { model, messages, mode } = parsed.data
 
-        const resolvedModel = resolveModel(model as ChatModel, messages, (mode as ChatMode) ?? "chat")
+        const resolvedModel = resolveModel(model as ChatModel, messages as Pick<Message, "content" | "role">[], (mode as ChatMode) ?? "chat")
         const tools = getToolsForModel(resolvedModel)
 
         let currentMessages = [...messages]
@@ -49,7 +47,7 @@ export async function POST(request: Request) {
 
           currentMessages.push({
             role: "assistant",
-            content: result.content ?? null,
+            content: result.content ?? "",
             tool_calls: result.toolCalls,
           })
 
@@ -105,7 +103,7 @@ export async function POST(request: Request) {
           },
         })
       } catch {
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+        return serverError()
       }
     },
   )
