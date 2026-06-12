@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState } from "react"
 import { MessageBubble } from "./message-bubble"
-import { MessageSquare, Bot, Globe, Briefcase, Code2, ArrowDown } from "lucide-react"
+import { MessageSquare, Bot, Globe, Briefcase, Code2, ArrowDown, Terminal } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -57,6 +57,22 @@ export function MessageList({ messages, isStreaming, mode = "chat", conversation
   const bottomRef = useRef<HTMLDivElement>(null)
   const userNearBottomRef = useRef(true)
   const [showScrollBtn, setShowScrollBtn] = useState(false)
+  const [elapsed, setElapsed] = useState(0)
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const lastMsg = messages[messages.length - 1]
+  const isToolRunning = isStreaming && lastMsg?.role === "tool" && (lastMsg.metadata as any)?.status === "running"
+
+  useEffect(() => {
+    if (isStreaming) {
+      const start = Date.now()
+      timerRef.current = setInterval(() => setElapsed((Date.now() - start) / 1000), 100)
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current)
+      setElapsed(0)
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current) }
+  }, [isStreaming])
 
   useEffect(() => {
     const container = containerRef.current
@@ -130,16 +146,24 @@ export function MessageList({ messages, isStreaming, mode = "chat", conversation
           ))}
           {isStreaming && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex items-center gap-2 text-muted-foreground px-4 py-2"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-2.5 text-muted-foreground px-4 py-2"
             >
-              <div className="flex gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" />
-                <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce [animation-delay:0.12s]" />
-                <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce [animation-delay:0.24s]" />
+              <div className="relative flex h-5 w-5 items-center justify-center">
+                <div className="absolute h-5 w-5 rounded-full bg-primary/20 animate-ping" />
+                <div className="h-2 w-2 rounded-full bg-primary" />
               </div>
-              <span className="text-xs text-muted-foreground/60">Generating response...</span>
+              <span className="text-xs text-muted-foreground/60">
+                {isToolRunning ? (
+                  <><Terminal className="inline h-3 w-3 mr-1 -mt-0.5" />Running tools...</>
+                ) : (
+                  "Generating response..."
+                )}
+              </span>
+              <span className="text-[10px] font-mono text-muted-foreground/40 tabular-nums">
+                {elapsed.toFixed(1)}s
+              </span>
             </motion.div>
           )}
           <div ref={bottomRef} />
