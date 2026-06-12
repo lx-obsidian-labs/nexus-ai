@@ -1,4 +1,4 @@
-import type { ChatModel, Message, ChatMode } from "@/types"
+import type { ChatModel, Message, ChatMode, ApiMessage } from "@/types"
 
 const NVIDIA_API_KEY = process.env.NVIDIA_NIM_API_KEY
 
@@ -73,7 +73,7 @@ export const MODEL_FALLBACK_CHAIN: ChatModel[] = [
   "meta/llama-3.1-8b-instruct",
 ]
 
-export function resolveModel(model: ChatModel, messages: Pick<Message, "role" | "content">[], mode: ChatMode): ChatModel {
+export function resolveModel(model: ChatModel, messages: ApiMessage[], mode: ChatMode): ChatModel {
   if (model !== "auto") return model
 
   const lastUserMsg = [...messages].reverse().find((m) => m.role === "user")
@@ -123,7 +123,7 @@ export function resolveModel(model: ChatModel, messages: Pick<Message, "role" | 
 
 interface NVCFRequest {
   model: string
-  messages: { role: string; content: string }[]
+  messages: ApiMessage[]
   temperature?: number
   top_p?: number
   max_tokens?: number
@@ -159,7 +159,7 @@ interface NVCFResponse {
 
 export async function generateChatCompletion(
   model: ChatModel,
-  messages: Pick<Message, "role" | "content">[],
+  messages: ApiMessage[],
   options?: { temperature?: number; maxTokens?: number; tools?: unknown[] },
 ): Promise<{ content: string | null; toolCalls: NVCFResponseMessage["tool_calls"] | null; usage: { promptTokens: number; completionTokens: number } }> {
   if (!NVIDIA_API_KEY) {
@@ -168,7 +168,12 @@ export async function generateChatCompletion(
 
   const body: NVCFRequest = {
     model,
-    messages: messages.map((m) => ({ role: m.role, content: m.content })),
+    messages: messages.map((m) => {
+      const msg: ApiMessage = { role: m.role, content: m.content }
+      if (m.tool_calls) msg.tool_calls = m.tool_calls
+      if (m.tool_call_id) msg.tool_call_id = m.tool_call_id
+      return msg
+    }),
     temperature: options?.temperature ?? 0.7,
     max_tokens: options?.maxTokens ?? 8192,
     stream: false,
@@ -197,7 +202,7 @@ export async function generateChatCompletion(
 
 export async function* streamChatCompletion(
   model: ChatModel,
-  messages: Pick<Message, "role" | "content">[],
+  messages: ApiMessage[],
   options?: { temperature?: number; maxTokens?: number },
 ): AsyncGenerator<string> {
   if (!NVIDIA_API_KEY) {
@@ -206,7 +211,12 @@ export async function* streamChatCompletion(
 
   const body: NVCFRequest = {
     model,
-    messages: messages.map((m) => ({ role: m.role, content: m.content })),
+    messages: messages.map((m) => {
+      const msg: ApiMessage = { role: m.role, content: m.content }
+      if (m.tool_calls) msg.tool_calls = m.tool_calls
+      if (m.tool_call_id) msg.tool_call_id = m.tool_call_id
+      return msg
+    }),
     temperature: options?.temperature ?? 0.7,
     max_tokens: options?.maxTokens ?? 8192,
     stream: true,

@@ -4,14 +4,21 @@ import { withRateLimit } from "@/lib/rate-limit"
 import { createClient } from "@/lib/supabase/server"
 import { unauthorized, serverError, validate } from "@/lib/api-utils"
 import { chatRequestSchema } from "@/lib/validators"
-import type { ChatModel, ChatMode, Message, ToolCall } from "@/types"
+import type { ChatModel, ChatMode, ToolCall, ApiMessage } from "@/types"
 
 const MAX_TOOL_ROUNDS = 5
 const MODEL_TIMEOUT_MS = 60000
 
+function toApiMessage(m: any): ApiMessage {
+  const msg: ApiMessage = { role: m.role, content: m.content ?? "" }
+  if (m.tool_calls) msg.tool_calls = m.tool_calls
+  if (m.tool_call_id) msg.tool_call_id = m.tool_call_id
+  return msg
+}
+
 async function tryGenerateWithFallback(
   model: ChatModel,
-  messages: Pick<Message, "role" | "content">[],
+  messages: ApiMessage[],
   tools: unknown[] | undefined,
   mode: ChatMode,
 ): Promise<{ content: string | null; toolCalls: any[] | null; modelUsed: ChatModel }> {
@@ -53,14 +60,14 @@ export async function POST(request: Request) {
         const parsed = validate(chatRequestSchema, body)
         if (parsed.error) return parsed.error
 
-        const { model, messages, mode } = parsed.data as { model: ChatModel; messages: any[]; mode: ChatMode }
+        const { model, messages, mode } = parsed.data as { model: ChatModel; messages: ApiMessage[]; mode: ChatMode }
 
         const resolvedModel = resolveModel(model, messages, mode ?? "chat")
         const tools = getToolsForModel(resolvedModel, mode)
 
         FILE_TOOL_CALLS.length = 0
 
-        let currentMessages: any[] = [...messages]
+        let currentMessages: ApiMessage[] = messages.map(toApiMessage)
         let toolRounds = 0
 
         while (toolRounds < MAX_TOOL_ROUNDS) {
@@ -98,7 +105,12 @@ export async function POST(request: Request) {
                 const data = JSON.stringify({ content: lastAssistantMsg.content })
                 controller.enqueue(encoder.encode(`data: ${data}\n\n`))
               } else {
-                const generator = streamChatCompletion(resolvedModel, currentMessages)
+                const summaryMessages = currentMessages.slice()
+                summaryMessages.push({
+                  role: "user",
+                  content: "Please summarize what you just did, including what files were created and their purposes.",
+                })
+                const generator = streamChatCompletion(resolvedModel, summaryMessages)
                 for await (const chunk of generator) {
                   const data = JSON.stringify({ content: chunk })
                   controller.enqueue(encoder.encode(`data: ${data}\n\n`))

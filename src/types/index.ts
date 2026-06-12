@@ -33,6 +33,8 @@ export interface Message {
   conversation_id: string
   role: MessageRole
   content: string
+  tool_call_id?: string
+  tool_calls?: ToolCall[]
   metadata: Record<string, unknown> | null
   created_at: string
 }
@@ -73,6 +75,13 @@ export interface ToolMessage {
   role: "tool"
   tool_call_id: string
   content: string
+}
+
+export interface ApiMessage {
+  role: string
+  content: string
+  tool_call_id?: string
+  tool_calls?: ToolCall[]
 }
 
 export interface GeneratedFile {

@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/client"
 import { generateId } from "@/lib/utils"
 import { getDefaultSystemPrompt, getCodingSystemPrompt, getWebSearchSystemPrompt, getResearchSystemPrompt, getAgentSystemPrompt } from "@/lib/ai/chat"
 import { toast } from "@/hooks/use-toast"
-import type { Conversation, Message, ChatModel, ChatMode } from "@/types"
+import type { Conversation, Message, ChatModel, ChatMode, ApiMessage } from "@/types"
 
 interface ChatInputProps {
   mode: ChatMode
@@ -198,11 +198,16 @@ export function ChatInput({
         }
       }
 
-      const apiMessages = [
-        { role: "system" as const, content: systemPrompt + (searchContext ? `\n\n${searchContext}` : "") },
+      const apiMessages: ApiMessage[] = [
+        { role: "system", content: systemPrompt + (searchContext ? `\n\n${searchContext}` : "") },
         ...updatedMessages
           .filter((m) => m.role !== "system")
-          .map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
+          .map((m) => {
+            const msg: ApiMessage = { role: m.role, content: m.content }
+            if (m.tool_call_id) msg.tool_call_id = m.tool_call_id
+            if (m.tool_calls) msg.tool_calls = m.tool_calls
+            return msg
+          }),
       ]
 
       abortRef.current = new AbortController()

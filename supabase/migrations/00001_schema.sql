@@ -28,8 +28,10 @@ CREATE INDEX idx_conversations_created_at ON conversations(created_at DESC);
 CREATE TABLE messages (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   conversation_id UUID NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
-  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system')),
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
   content TEXT NOT NULL,
+  tool_call_id TEXT,
+  tool_calls JSONB,
   metadata JSONB,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

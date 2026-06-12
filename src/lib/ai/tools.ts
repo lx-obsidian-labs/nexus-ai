@@ -60,10 +60,11 @@ const getDatetimeHandler: ToolHandler = async () => {
 export const FILE_TOOL_CALLS: { conversationId: string; filename: string; content: string; language: string }[] = []
 
 const createFileHandler: ToolHandler = async (args) => {
-  const filename = (args.filename ?? args.name ?? "untitled.txt") as string
-  const content = (args.content ?? args.code ?? "") as string
-  const language = (args.language ?? args.lang ?? "") as string
-  const conversationId = (args.conversation_id ?? "") as string
+  const filename = String(args.filename ?? args.name ?? "untitled.txt")
+  const raw = args.content ?? args.code ?? ""
+  const content = typeof raw === "string" ? raw : JSON.stringify(raw)
+  const language = String(args.language ?? args.lang ?? "")
+  const conversationId = String(args.conversation_id ?? "")
 
   if (!filename || !content) return "Error: filename and content are required."
 
