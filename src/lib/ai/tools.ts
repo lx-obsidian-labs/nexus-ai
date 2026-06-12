@@ -1,6 +1,8 @@
 import { webSearch } from "@/lib/search"
-import { createClient } from "@/lib/supabase/server"
-import type { ToolCall } from "@/types"
+import { createClient as createServerClient } from "@/lib/supabase/server"
+import type { ToolCall, ToolName } from "@/types"
+
+const MAX_TOOL_RESULT_LENGTH = 8000
 
 export interface ToolDefinition {
   type: "function"
@@ -17,25 +19,41 @@ export interface ToolCallResult {
   content: string
 }
 
-export type ToolHandler = (args: Record<string, unknown>) => Promise<string>
+export interface CreatedFile {
+  filename: string
+  content: string
+  language: string
+}
+
+export interface ToolResult {
+  content: string
+  file?: { filename: string; content: string; language: string }
+}
+
+export type ToolHandler = (args: Record<string, unknown>) => Promise<string | ToolResult>
+
+function truncate(str: string, max: number): string {
+  if (str.length <= max) return str
+  return str.slice(0, max) + `\n\n[... truncated to ${max} characters]`
+}
 
 const webSearchHandler: ToolHandler = async (args) => {
-  const query = (args.query ?? args.q ?? "") as string
+  const query = String(args.query ?? args.q ?? "")
   if (!query) return "Error: No search query provided."
   try {
     const { results, error } = await webSearch(query)
     if (error) return `Search error: ${error}`
     if (!results.length) return "No search results found."
-    return results.map((r, i) =>
+    return truncate(results.map((r, i) =>
       `[${i + 1}] ${r.title}\n${r.snippet ?? ""}\nURL: ${r.link}`
-    ).join("\n\n")
+    ).join("\n\n"), MAX_TOOL_RESULT_LENGTH)
   } catch (e) {
     return `Web search failed: ${e instanceof Error ? e.message : "Unknown error"}`
   }
 }
 
 const calculateHandler: ToolHandler = async (args) => {
-  const expression = (args.expression ?? "") as string
+  const expression = String(args.expression ?? "")
   try {
     const sanitized = expression.replace(/[^0-9+\-*/.()%^ ]/g, "")
     if (!sanitized) return "Error: Invalid expression."
@@ -57,8 +75,6 @@ const getDatetimeHandler: ToolHandler = async () => {
   })
 }
 
-export const FILE_TOOL_CALLS: { conversationId: string; filename: string; content: string; language: string }[] = []
-
 const createFileHandler: ToolHandler = async (args) => {
   const filename = String(args.filename ?? args.name ?? "untitled.txt")
   const raw = args.content ?? args.code ?? ""
@@ -69,9 +85,18 @@ const createFileHandler: ToolHandler = async (args) => {
   if (!filename || !content) return "Error: filename and content are required."
 
   try {
-    const supabase = await createClient()
+    const supabase = await createServerClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return "Error: Not authenticated."
+
+    if (conversationId) {
+      const { data: conv } = await supabase
+        .from("conversations")
+        .select("user_id")
+        .eq("id", conversationId)
+        .single()
+      if (conv && conv.user_id !== user.id) return "Error: Conversation not found."
+    }
 
     const { data, error } = await supabase
       .from("generated_files")
@@ -87,9 +112,10 @@ const createFileHandler: ToolHandler = async (args) => {
 
     if (error) return `Error saving file: ${error.message}`
 
-    FILE_TOOL_CALLS.push({ conversationId, filename, content, language })
-
-    return `File created successfully: ${filename} (${language || "text"})`
+    return {
+      content: `File created successfully: ${filename} (${language || "text"})`,
+      file: { filename, content, language },
+    }
   } catch (e) {
     return `Error creating file: ${e instanceof Error ? e.message : "Unknown error"}`
   }
@@ -180,21 +206,33 @@ const toolHandlers: Record<string, ToolHandler> = {
   create_file: createFileHandler,
 }
 
+const TOOL_CAPABLE_MODELS = [
+  "nvidia/nemotron-3-ultra-550b-a55b",
+  "nvidia/nemotron-3-super-120b-a12b",
+  "nvidia/nemotron-3-nano-30b-a3b",
+]
+
 export function getToolsForModel(model: string, mode?: string): ToolDefinition[] {
   if (mode === "agent") return TOOL_DEFINITIONS
-  if (model.includes("nemotron-3-ultra") || model.includes("nemotron-3-super") || model.includes("nemotron-3-nano")) return TOOL_DEFINITIONS
-  return TOOL_DEFINITIONS
+  if (TOOL_CAPABLE_MODELS.includes(model)) return TOOL_DEFINITIONS
+  return []
 }
 
-export async function executeToolCall(toolCall: ToolCall): Promise<string> {
+export interface ExecuteToolCallResult {
+  content: string
+  file?: { filename: string; content: string; language: string }
+}
+
+export async function executeToolCall(toolCall: ToolCall): Promise<ExecuteToolCallResult> {
   const handler = toolHandlers[toolCall.function.name]
-  if (!handler) return `Error: Unknown tool "${toolCall.function.name}".`
+  if (!handler) return { content: `Error: Unknown tool "${toolCall.function.name}".` }
 
   try {
     const args = JSON.parse(toolCall.function.arguments)
     const result = await handler(args)
+    if (typeof result === "string") return { content: result }
     return result
   } catch (e) {
-    return `Error executing ${toolCall.function.name}: ${e instanceof Error ? e.message : "Unknown error"}`
+    return { content: `Error executing ${toolCall.function.name}: ${e instanceof Error ? e.message : "Unknown error"}` }
   }
 }

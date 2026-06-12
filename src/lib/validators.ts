@@ -38,6 +38,7 @@ export const chatRequestSchema = z.object({
   model: modelEnum,
   messages: z.array(messageSchema).min(1).max(100, "Too many messages"),
   mode: z.enum(["chat", "coding", "websearch", "research", "agent"]).optional(),
+  conversation_id: z.string().uuid().optional(),
 })
 
 export const fileCreateSchema = z.object({

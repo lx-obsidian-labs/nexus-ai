@@ -160,7 +160,7 @@ interface NVCFResponse {
 export async function generateChatCompletion(
   model: ChatModel,
   messages: ApiMessage[],
-  options?: { temperature?: number; maxTokens?: number; tools?: unknown[] },
+  options?: { temperature?: number; maxTokens?: number; tools?: unknown[]; signal?: AbortSignal },
 ): Promise<{ content: string | null; toolCalls: NVCFResponseMessage["tool_calls"] | null; usage: { promptTokens: number; completionTokens: number } }> {
   if (!NVIDIA_API_KEY) {
     throw new Error("NVIDIA NIM API key is not configured")
@@ -185,7 +185,7 @@ export async function generateChatCompletion(
   }
 
   const urls = getApiUrls()
-  const response = await fetchWithFallback(urls, body)
+  const response = await fetchWithFallback(urls, body, options?.signal)
 
   const data: NVCFResponse = await response.json()
   const message = data.choices[0]?.message

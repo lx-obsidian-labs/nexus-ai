@@ -210,16 +210,20 @@ export function ChatInput({
           }),
       ]
 
-      abortRef.current = new AbortController()
+      const controller = new AbortController()
+      abortRef.current = controller
+
+      const timeoutId = setTimeout(() => controller.abort(), 60000)
 
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model, messages: apiMessages, mode }),
-        signal: abortRef.current.signal,
+        body: JSON.stringify({ model, messages: apiMessages, mode, conversation_id: convId }),
+        signal: controller.signal,
       })
 
       if (!response.ok) {
+        clearTimeout(timeoutId)
         const errBody = await response.text().catch(() => "")
         throw new Error(errBody || `API error: ${response.status}`)
       }
@@ -265,6 +269,8 @@ export function ChatInput({
         }
       }
 
+      clearTimeout(timeoutId)
+
       if (!fullContent && streamError) {
         throw new Error(streamError)
       }
@@ -279,6 +285,7 @@ export function ChatInput({
       if (err instanceof DOMException && err.name === "AbortError") return
       const msg = err instanceof Error ? err.message : "Chat failed"
       toast({ title: "Chat error", description: msg, variant: "destructive" })
+      onMessagesChange(messages)
     } finally {
       setIsStreaming(false)
       onStreamingChange(false)

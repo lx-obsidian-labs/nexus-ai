@@ -62,6 +62,8 @@ export interface ChatStreamChunk {
   done: boolean
 }
 
+export type ToolName = "web_search" | "calculate" | "get_current_datetime" | "create_file"
+
 export interface ToolCall {
   id: string
   type: "function"
@@ -78,10 +80,17 @@ export interface ToolMessage {
 }
 
 export interface ApiMessage {
-  role: string
+  role: MessageRole | string
   content: string
   tool_call_id?: string
   tool_calls?: ToolCall[]
+}
+
+export interface ToolCallEvent {
+  type: "tool_start" | "tool_end"
+  name: string
+  tool_call_id: string
+  content?: string
 }
 
 export interface GeneratedFile {
