@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Check, Copy, Terminal, Eye, ExternalLink } from "lucide-react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+import { motion, AnimatePresence } from "framer-motion"
 
 interface CodeBlockProps {
   language: string
@@ -47,11 +48,17 @@ function PreviewDialog({ code, language, open, onOpenChange }: { code: string; l
 export function CodeBlock({ language, code }: CodeBlockProps) {
   const [copied, setCopied] = useState(false)
   const [previewOpen, setPreviewOpen] = useState(false)
+  const [toastVisible, setToastVisible] = useState(false)
+  const buttonRef = useRef<HTMLButtonElement>(null)
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(code)
     setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
+    setToastVisible(true)
+    setTimeout(() => {
+      setCopied(false)
+      setToastVisible(false)
+    }, 1500)
   }
 
   const isPreviewable = ["html", "htm", "svg"].includes(language)
@@ -75,17 +82,45 @@ export function CodeBlock({ language, code }: CodeBlockProps) {
                 Preview
               </button>
             )}
-            <button
-              onClick={handleCopy}
-              className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
-            >
-              {copied ? (
-                <Check className="h-3.5 w-3.5 text-green-500" />
-              ) : (
-                <Copy className="h-3.5 w-3.5" />
-              )}
-              {copied ? "Copied!" : "Copy"}
-            </button>
+            <div className="relative">
+              <button
+                ref={buttonRef}
+                onClick={handleCopy}
+                className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs transition-all duration-200 hover:bg-white/10"
+              >
+                <motion.span
+                  key={copied ? "check" : "copy"}
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.5, opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className="flex items-center gap-1.5"
+                >
+                  {copied ? (
+                    <Check className="h-3.5 w-3.5 text-green-400" />
+                  ) : (
+                    <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+                  )}
+                  <span className={copied ? "text-green-400" : "text-muted-foreground"}>
+                    {copied ? "Copied!" : "Copy"}
+                  </span>
+                </motion.span>
+              </button>
+              <AnimatePresence>
+                {toastVisible && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -4, scale: 0.9 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute -top-9 right-0 whitespace-nowrap rounded-lg bg-green-500/90 px-2.5 py-1 text-[11px] font-medium text-white shadow-lg backdrop-blur-sm"
+                  >
+                    Copied to clipboard
+                    <div className="absolute -bottom-1 right-4 h-2 w-2 rotate-45 bg-green-500/90" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
         <div className="overflow-x-auto">
