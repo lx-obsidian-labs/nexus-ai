@@ -11,9 +11,10 @@ import type { Message } from "@/types"
 
 interface MessageBubbleProps {
   message: Message
+  conversationId?: string
 }
 
-export function MessageBubble({ message }: MessageBubbleProps) {
+export function MessageBubble({ message, conversationId }: MessageBubbleProps) {
   const isUser = message.role === "user"
 
   return (
@@ -58,7 +59,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                       const match = /language-(\w+)/.exec(className || "")
                       const code = String(children).replace(/\n$/, "")
                       if (match) {
-                        return <CodeBlock language={match[1]} code={code} />
+                        return <CodeBlock language={match[1]} code={code} conversationId={conversationId} />
                       }
                       return (
                         <code

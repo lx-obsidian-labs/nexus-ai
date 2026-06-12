@@ -4,6 +4,7 @@ import DashboardShell from "@/components/dashboard/shell"
 import { ChatInput } from "@/components/chat/chat-input"
 import { MessageList } from "@/components/chat/message-list"
 import { ChatSidebar } from "@/components/chat/chat-sidebar"
+import { FilePanel } from "@/components/chat/file-panel"
 import { ModelSelector } from "@/components/chat/model-selector"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -14,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn, downloadAsFile, formatConversationAsMarkdown, formatConversationAsJson } from "@/lib/utils"
-import { Bot, Code2, Download, MessageSquare, Globe, Briefcase } from "lucide-react"
+import { Bot, Code2, Download, MessageSquare, Globe, Briefcase, FileCode, PanelRightOpen } from "lucide-react"
 import type { Conversation, Message, ChatModel, ChatMode } from "@/types"
 
 const MODES: { value: ChatMode; label: string; icon: typeof Bot }[] = [
@@ -29,6 +30,7 @@ export default function ChatPage() {
   const [conversation, setConversation] = useState<Conversation | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
+  const [filePanelOpen, setFilePanelOpen] = useState(false)
 
   const handleSelectConversation = (conv: Conversation, msgs: Message[]) => {
     setConversation(conv)
@@ -70,6 +72,17 @@ export default function ChatPage() {
                 />
               </div>
               <div className="flex items-center gap-2">
+                {conversation && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn("gap-1.5 rounded-xl", filePanelOpen && "bg-background shadow-xs")}
+                    onClick={() => setFilePanelOpen(!filePanelOpen)}
+                  >
+                    <FileCode className="h-4 w-4" />
+                    <span className="hidden sm:inline">Files</span>
+                  </Button>
+                )}
                 {conversation && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -124,7 +137,7 @@ export default function ChatPage() {
               </div>
             </div>
           </div>
-          <MessageList messages={messages} isStreaming={isStreaming} mode={mode} />
+          <MessageList messages={messages} isStreaming={isStreaming} mode={mode} conversationId={conversation?.id} />
           <ChatInput
             mode={mode}
             conversation={conversation}
@@ -134,6 +147,11 @@ export default function ChatPage() {
             onConversationChange={setConversation}
           />
         </div>
+        <FilePanel
+          conversationId={conversation?.id}
+          open={filePanelOpen}
+          onToggle={() => setFilePanelOpen(!filePanelOpen)}
+        />
       </div>
     </DashboardShell>
   )

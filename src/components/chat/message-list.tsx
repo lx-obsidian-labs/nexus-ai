@@ -12,6 +12,7 @@ interface MessageListProps {
   messages: Message[]
   isStreaming: boolean
   mode?: ChatMode
+  conversationId?: string
 }
 
 const emptyStates: Record<ChatMode, { icon: typeof Bot; title: string; desc: string; hints: string[] }> = {
@@ -45,7 +46,7 @@ function isNearBottom(element: HTMLElement, threshold = 100): boolean {
   return element.scrollHeight - element.scrollTop - element.clientHeight < threshold
 }
 
-export function MessageList({ messages, isStreaming, mode = "chat" }: MessageListProps) {
+export function MessageList({ messages, isStreaming, mode = "chat", conversationId }: MessageListProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const userNearBottomRef = useRef(true)
@@ -119,7 +120,7 @@ export function MessageList({ messages, isStreaming, mode = "chat" }: MessageLis
       >
         <div className="mx-auto max-w-3xl space-y-4 px-4 py-6">
           {messages.map((message) => (
-            <MessageBubble key={message.id} message={message} />
+            <MessageBubble key={message.id} message={message} conversationId={conversationId} />
           ))}
           {isStreaming && (
             <motion.div

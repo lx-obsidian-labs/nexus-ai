@@ -1,13 +1,16 @@
 "use client"
 
-import { useState, useRef } from "react"
-import { Check, Copy, Terminal, Eye, ExternalLink } from "lucide-react"
+import { useState, useRef, useCallback } from "react"
+import { Check, Copy, Terminal, Eye, ExternalLink, Save, FileCode } from "lucide-react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { motion, AnimatePresence } from "framer-motion"
+import { Input } from "@/components/ui/input"
+import { toast } from "@/hooks/use-toast"
 
 interface CodeBlockProps {
   language: string
   code: string
+  conversationId?: string
 }
 
 function PreviewDialog({ code, language, open, onOpenChange }: { code: string; language: string; open: boolean; onOpenChange: (v: boolean) => void }) {
@@ -45,10 +48,13 @@ function PreviewDialog({ code, language, open, onOpenChange }: { code: string; l
   )
 }
 
-export function CodeBlock({ language, code }: CodeBlockProps) {
+export function CodeBlock({ language, code, conversationId }: CodeBlockProps) {
   const [copied, setCopied] = useState(false)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [toastVisible, setToastVisible] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [showSaveInput, setShowSaveInput] = useState(false)
+  const [fileName, setFileName] = useState(`code.${language || "txt"}`)
   const buttonRef = useRef<HTMLButtonElement>(null)
 
   const handleCopy = async () => {
@@ -60,6 +66,30 @@ export function CodeBlock({ language, code }: CodeBlockProps) {
       setToastVisible(false)
     }, 1500)
   }
+
+  const handleSave = useCallback(async () => {
+    if (!conversationId || saving || !fileName.trim()) return
+    setSaving(true)
+    try {
+      const res = await fetch("/api/files", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          conversation_id: conversationId,
+          filename: fileName.trim(),
+          content: code,
+          language: language || "",
+        }),
+      })
+      if (!res.ok) throw new Error("Failed to save file")
+      toast({ title: "File saved", description: fileName.trim(), variant: "success" })
+      setShowSaveInput(false)
+    } catch {
+      toast({ title: "Failed to save file", variant: "destructive" })
+    } finally {
+      setSaving(false)
+    }
+  }, [conversationId, fileName, code, language, saving])
 
   const isPreviewable = ["html", "htm", "svg"].includes(language)
   const langLabel = language || "code"
@@ -81,6 +111,34 @@ export function CodeBlock({ language, code }: CodeBlockProps) {
                 <Eye className="h-3.5 w-3.5" />
                 Preview
               </button>
+            )}
+            {conversationId && !showSaveInput && (
+              <button
+                onClick={() => setShowSaveInput(true)}
+                className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
+              >
+                <Save className="h-3.5 w-3.5" />
+                Save
+              </button>
+            )}
+            {conversationId && showSaveInput && (
+              <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                <Input
+                  value={fileName}
+                  onChange={(e) => setFileName(e.target.value)}
+                  className="h-7 w-32 text-[11px] rounded-md bg-white/5 border-white/10"
+                  placeholder="filename.ext"
+                  onKeyDown={(e) => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") setShowSaveInput(false) }}
+                  autoFocus
+                />
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="flex items-center gap-1 rounded-md px-1.5 py-1 text-xs text-green-400 hover:bg-green-500/10 transition-colors disabled:opacity-50"
+                >
+                  {saving ? "..." : <FileCode className="h-3 w-3" />}
+                </button>
+              </div>
             )}
             <div className="relative">
               <button

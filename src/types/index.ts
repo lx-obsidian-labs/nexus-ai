@@ -79,3 +79,13 @@ export interface ToolMessage {
   tool_call_id: string
   content: string
 }
+
+export interface GeneratedFile {
+  id: string
+  conversation_id: string
+  user_id: string
+  filename: string
+  content: string
+  language: string
+  created_at: string
+}
