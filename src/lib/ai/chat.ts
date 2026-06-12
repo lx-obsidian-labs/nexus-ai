@@ -129,7 +129,7 @@ export async function generateChatCompletion(
     model,
     messages: messages.map((m) => ({ role: m.role, content: m.content })),
     temperature: options?.temperature ?? 0.7,
-    max_tokens: options?.maxTokens ?? 2048,
+    max_tokens: options?.maxTokens ?? 8192,
     stream: false,
   }
 
@@ -148,7 +148,8 @@ export async function generateChatCompletion(
   })
 
   if (!response.ok) {
-    throw new Error(`NVIDIA API error: ${response.status} ${response.statusText}`)
+    const errBody = await response.text().catch(() => "")
+    throw new Error(`NVIDIA API error (${response.status}): ${errBody || response.statusText}`)
   }
 
   const data: NVCFResponse = await response.json()
@@ -177,7 +178,7 @@ export async function* streamChatCompletion(
     model,
     messages: messages.map((m) => ({ role: m.role, content: m.content })),
     temperature: options?.temperature ?? 0.7,
-    max_tokens: options?.maxTokens ?? 2048,
+    max_tokens: options?.maxTokens ?? 8192,
     stream: true,
   }
 
@@ -191,7 +192,8 @@ export async function* streamChatCompletion(
   })
 
   if (!response.ok) {
-    throw new Error(`NVIDIA API error: ${response.status} ${response.statusText}`)
+    const errBody = await response.text().catch(() => "")
+    throw new Error(`NVIDIA API error (${response.status}): ${errBody || response.statusText}`)
   }
 
   const reader = response.body?.getReader()
