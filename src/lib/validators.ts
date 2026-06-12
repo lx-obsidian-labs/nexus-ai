@@ -12,15 +12,18 @@ export const signInSchema = z.object({
   password: z.string().min(1, "Password is required"),
 })
 
+const modelEnum = z.enum(CHAT_MODELS.map((m) => m.value) as [string, ...string[]])
+
 export const chatMessageSchema = z.object({
   content: z.string().min(1, "Message cannot be empty").max(10000, "Message too long"),
   conversationId: z.string().uuid().optional(),
-  model: z.enum(CHAT_MODELS.map((m) => m.value) as [string, ...string[]]),
+  model: modelEnum,
+  mode: z.enum(["chat", "coding", "websearch", "research"]).optional(),
 })
 
 export const conversationUpdateSchema = z.object({
   title: z.string().min(1).max(200).optional(),
-  model: z.enum(CHAT_MODELS.map((m) => m.value) as [string, ...string[]]).optional(),
+  model: modelEnum.optional(),
 })
 
 export function sanitizeHtml(input: string): string {

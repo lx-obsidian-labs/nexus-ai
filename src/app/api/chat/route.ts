@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server"
-import { streamChatCompletion } from "@/lib/ai/chat"
+import { streamChatCompletion, resolveModel } from "@/lib/ai/chat"
 import { withRateLimit } from "@/lib/rate-limit"
 import { createClient } from "@/lib/supabase/server"
-import type { ChatModel } from "@/types"
+import type { ChatModel, ChatMode } from "@/types"
 
 export async function POST(request: Request) {
   return withRateLimit(
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
 
-        const { model, messages } = await request.json()
+        const { model, messages, mode } = await request.json()
 
         if (!model || !messages || !Array.isArray(messages)) {
           return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
@@ -26,12 +26,14 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: "Too many messages" }, { status: 400 })
         }
 
+        const resolvedModel = resolveModel(model as ChatModel, messages, (mode as ChatMode) ?? "chat")
+
         const encoder = new TextEncoder()
         const stream = new ReadableStream({
           async start(controller) {
             try {
               const generator = streamChatCompletion(
-                model as ChatModel,
+                resolvedModel,
                 messages,
               )
 

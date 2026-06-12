@@ -1,7 +1,72 @@
-import type { ChatModel, Message } from "@/types"
+import type { ChatModel, Message, ChatMode } from "@/types"
 
 const CHAT_API_URL = process.env.NVIDIA_API_URL || `${process.env.NVIDIA_NIM_BASE_URL || "https://integrate.api.nvidia.com/v1"}/chat/completions`
 const NVIDIA_API_KEY = process.env.NVIDIA_NIM_API_KEY
+
+const CODING_KEYWORDS = [
+  "code", "function", "bug", "debug", "api", "endpoint", "route", "component",
+  "class", "method", "variable", "array", "object", "json", "sql", "query",
+  "typescript", "javascript", "python", "rust", "go", "java", "react", "node",
+  "css", "html", "docker", "git", "deploy", "test", "jest", "lint", "refactor",
+  "compile", "error", "exception", "async", "promise", "callback", "import",
+  "export", "module", "config", "build", "algorithm", "data structure",
+]
+
+const REASONING_KEYWORDS = [
+  "math", "equation", "solve", "prove", "theorem", "calculate", "logic",
+  "reasoning", "explain why", "analysis", "compare", "contrast", "evaluate",
+  "hypothesis", "theory", "deduce", "infer", "synthesize",
+]
+
+const CREATIVE_KEYWORDS = [
+  "story", "poem", "essay", "creative", "write", "blog", "article", "content",
+  "marketing", "ad copy", "headline", "describe", "narrative", "dialogue",
+  "metaphor", "imagine", "brainstorm", "idea",
+]
+
+export function resolveModel(model: ChatModel, messages: Pick<Message, "role" | "content">[], mode: ChatMode): ChatModel {
+  if (model !== "auto") return model
+
+  const lastUserMsg = [...messages].reverse().find((m) => m.role === "user")
+  const prompt = (lastUserMsg?.content ?? "").toLowerCase()
+  const fullContext = messages.map((m) => m.content).join(" ").toLowerCase()
+
+  const text = `${prompt} ${fullContext}`
+
+  if (mode === "coding") {
+    return "deepseek/deepseek-r1"
+  }
+
+  if (mode === "websearch") {
+    return "meta/llama-3.1-70b-instruct"
+  }
+
+  if (mode === "research") {
+    return "mistralai/mistral-large"
+  }
+
+  const codingScore = CODING_KEYWORDS.filter((k) => text.includes(k)).length
+  const reasoningScore = REASONING_KEYWORDS.filter((k) => text.includes(k)).length
+  const creativeScore = CREATIVE_KEYWORDS.filter((k) => text.includes(k)).length
+
+  if (codingScore >= reasoningScore && codingScore >= creativeScore && codingScore >= 2) {
+    return "qwen/qwen2.5-72b-instruct"
+  }
+
+  if (reasoningScore >= codingScore && reasoningScore >= creativeScore && reasoningScore >= 2) {
+    return "deepseek/deepseek-r1"
+  }
+
+  if (creativeScore >= codingScore && creativeScore >= reasoningScore && creativeScore >= 2) {
+    return "mistralai/mistral-large"
+  }
+
+  if (text.length > 8000) {
+    return "microsoft/phi-3-medium-128k-instruct"
+  }
+
+  return "meta/llama-3.1-70b-instruct"
+}
 
 interface NVCFRequest {
   model: string

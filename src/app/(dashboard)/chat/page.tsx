@@ -65,7 +65,7 @@ export default function ChatPage() {
                   </div>
                 )}
                 <ModelSelector
-                  value={conversation?.model as ChatModel ?? "meta/llama-3.1-70b-instruct"}
+                  value={conversation?.model as ChatModel ?? "auto"}
                   onChange={handleModelChange}
                 />
               </div>

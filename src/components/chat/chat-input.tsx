@@ -57,7 +57,7 @@ export function ChatInput({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: conversation?.model ?? "meta/llama-3.1-70b-instruct",
+          model: conversation?.model ?? "auto",
           messages: [
             { role: "system", content: "You are a prompt engineering expert. Rewrite the user's message to be more detailed, specific, and effective. Return ONLY the improved prompt, no explanations." },
             { role: "user", content },
@@ -106,7 +106,7 @@ export function ChatInput({
     onStreamingChange(true)
 
     const supabase = createClient()
-    const model = conversation?.model ?? "meta/llama-3.1-70b-instruct"
+    const model = conversation?.model ?? "auto"
 
     try {
       let convId = conversation?.id
@@ -193,7 +193,7 @@ export function ChatInput({
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model, messages: apiMessages }),
+        body: JSON.stringify({ model, messages: apiMessages, mode }),
         signal: abortRef.current.signal,
       })
 

@@ -1,9 +1,15 @@
 export type ChatModel =
+  | "auto"
   | "meta/llama-3.1-70b-instruct"
+  | "meta/llama-3.1-8b-instruct"
   | "deepseek/deepseek-r1"
   | "mistralai/mistral-large"
+  | "mistralai/mixtral-8x22b-instruct"
   | "qwen/qwen2.5-72b-instruct"
   | "minimaxai/minimax-m2.7"
+  | "google/gemma-2-27b-it"
+  | "microsoft/phi-3-medium-128k-instruct"
+  | "nvidia/nemotron-3-super-120b-a12b"
 
 export type ChatMode = "chat" | "coding" | "websearch" | "research"
 
