@@ -47,9 +47,8 @@ export async function generateImage(
   }
 
   const body: Record<string, unknown> = {
+    model,
     prompt,
-    mode: "Image Generation",
-    steps: config?.steps ?? 28,
     width: options?.width ?? 1024,
     height: options?.height ?? 1024,
     seed: options?.seed ?? 0,
