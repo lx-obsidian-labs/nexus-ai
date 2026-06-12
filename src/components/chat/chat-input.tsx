@@ -225,6 +225,13 @@ export function ChatInput({
       if (!response.ok) {
         clearTimeout(timeoutId)
         const errBody = await response.text().catch(() => "")
+        if (response.status === 429) {
+          const retryAfter = response.headers.get("Retry-After")
+          const msg = retryAfter
+            ? `Too many requests. Try again in ${Math.ceil(Number(retryAfter))}s.`
+            : "Too many requests. Please wait before sending another message."
+          throw new Error(msg)
+        }
         throw new Error(errBody || `API error: ${response.status}`)
       }
 
