@@ -1,7 +1,48 @@
 import type { ChatModel, Message, ChatMode } from "@/types"
 
-const CHAT_API_URL = process.env.NVIDIA_API_URL || `${process.env.NVIDIA_NIM_BASE_URL || "https://integrate.api.nvidia.com/v1"}/chat/completions`
 const NVIDIA_API_KEY = process.env.NVIDIA_NIM_API_KEY
+
+function getApiUrls(): string[] {
+  const urls: string[] = []
+
+  if (process.env.NVIDIA_API_URL) {
+    urls.push(process.env.NVIDIA_API_URL)
+  }
+
+  if (process.env.NVIDIA_NIM_BASE_URL) {
+    urls.push(`${process.env.NVIDIA_NIM_BASE_URL}/chat/completions`)
+  }
+
+  urls.push("https://integrate.api.nvidia.com/v1/chat/completions")
+  urls.push("https://api.nvcf.nvidia.com/v2/nvcf/chat/completions")
+
+  return urls
+}
+
+async function fetchWithFallback(urls: string[], body: unknown, signal?: AbortSignal): Promise<Response> {
+  let lastError: Error | null = null
+
+  for (const url of urls) {
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${NVIDIA_API_KEY}`,
+        },
+        body: JSON.stringify(body),
+        signal,
+      })
+      if (response.ok) return response
+      const errBody = await response.text().catch(() => "")
+      lastError = new Error(`NVIDIA API error (${response.status}) at ${url}: ${errBody || response.statusText}`)
+    } catch (e) {
+      lastError = e instanceof Error ? e : new Error(String(e))
+    }
+  }
+
+  throw lastError || new Error("All NVIDIA API endpoints failed")
+}
 
 const CODING_KEYWORDS = [
   "code", "function", "bug", "debug", "api", "endpoint", "route", "component",
@@ -138,19 +179,8 @@ export async function generateChatCompletion(
     body.tool_choice = "auto"
   }
 
-  const response = await fetch(CHAT_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${NVIDIA_API_KEY}`,
-    },
-    body: JSON.stringify(body),
-  })
-
-  if (!response.ok) {
-    const errBody = await response.text().catch(() => "")
-    throw new Error(`NVIDIA API error (${response.status}): ${errBody || response.statusText}`)
-  }
+  const urls = getApiUrls()
+  const response = await fetchWithFallback(urls, body)
 
   const data: NVCFResponse = await response.json()
   const message = data.choices[0]?.message
@@ -182,19 +212,8 @@ export async function* streamChatCompletion(
     stream: true,
   }
 
-  const response = await fetch(CHAT_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${NVIDIA_API_KEY}`,
-    },
-    body: JSON.stringify(body),
-  })
-
-  if (!response.ok) {
-    const errBody = await response.text().catch(() => "")
-    throw new Error(`NVIDIA API error (${response.status}): ${errBody || response.statusText}`)
-  }
+  const urls = getApiUrls()
+  const response = await fetchWithFallback(urls, body)
 
   const reader = response.body?.getReader()
   if (!reader) throw new Error("No response body")
