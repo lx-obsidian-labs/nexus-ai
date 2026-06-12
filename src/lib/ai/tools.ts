@@ -181,13 +181,7 @@ const toolHandlers: Record<string, ToolHandler> = {
 
 export function getToolsForModel(model: string, mode?: string): ToolDefinition[] {
   if (mode === "agent") return TOOL_DEFINITIONS
-  if (model.includes("nemotron-3-ultra")) return TOOL_DEFINITIONS
-  const nonToolModels = [
-    "deepseek/deepseek-r1",
-    "minimaxai/minimax-m2.7",
-    "google/gemma-2-27b-it",
-  ]
-  if (nonToolModels.some((m) => model.includes(m))) return []
+  if (model.includes("nemotron-3-ultra") || model.includes("nemotron-3-super") || model.includes("nemotron-3-nano")) return TOOL_DEFINITIONS
   return TOOL_DEFINITIONS
 }
 

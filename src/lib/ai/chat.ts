@@ -24,6 +24,14 @@ const CREATIVE_KEYWORDS = [
   "metaphor", "imagine", "brainstorm", "idea",
 ]
 
+export const MODEL_FALLBACK_CHAIN: ChatModel[] = [
+  "nvidia/nemotron-3-ultra-550b-a55b",
+  "nvidia/nemotron-3-super-120b-a12b",
+  "nvidia/nemotron-3-nano-30b-a3b",
+  "meta/llama-3.1-70b-instruct",
+  "meta/llama-3.1-8b-instruct",
+]
+
 export function resolveModel(model: ChatModel, messages: Pick<Message, "role" | "content">[], mode: ChatMode): ChatModel {
   if (model !== "auto") return model
 
@@ -34,15 +42,15 @@ export function resolveModel(model: ChatModel, messages: Pick<Message, "role" | 
   const text = `${prompt} ${fullContext}`
 
   if (mode === "coding") {
-    return "deepseek/deepseek-r1"
+    return "nvidia/nemotron-3-ultra-550b-a55b"
   }
 
   if (mode === "websearch") {
-    return "google/diffusiongemma-26b-a4b-it"
+    return "meta/llama-3.1-70b-instruct"
   }
 
   if (mode === "research") {
-    return "google/diffusiongemma-26b-a4b-it"
+    return "nvidia/nemotron-3-super-120b-a12b"
   }
 
   if (mode === "agent") {
@@ -54,22 +62,22 @@ export function resolveModel(model: ChatModel, messages: Pick<Message, "role" | 
   const creativeScore = CREATIVE_KEYWORDS.filter((k) => text.includes(k)).length
 
   if (codingScore >= reasoningScore && codingScore >= creativeScore && codingScore >= 2) {
-    return "qwen/qwen2.5-72b-instruct"
+    return "nvidia/nemotron-3-ultra-550b-a55b"
   }
 
   if (reasoningScore >= codingScore && reasoningScore >= creativeScore && reasoningScore >= 2) {
-    return "deepseek/deepseek-r1"
+    return "nvidia/nemotron-3-super-120b-a12b"
   }
 
   if (creativeScore >= codingScore && creativeScore >= reasoningScore && creativeScore >= 2) {
-    return "mistralai/mistral-large"
+    return "nvidia/nemotron-3-nano-30b-a3b"
   }
 
   if (text.length > 8000) {
-    return "microsoft/phi-3-medium-128k-instruct"
+    return "nvidia/nemotron-3-super-120b-a12b"
   }
 
-  return "google/diffusiongemma-26b-a4b-it"
+  return "nvidia/nemotron-3-nano-30b-a3b"
 }
 
 interface NVCFRequest {
@@ -221,14 +229,6 @@ export async function* streamChatCompletion(
     reader.releaseLock()
   }
 }
-
-export const MODEL_FALLBACK_CHAIN: ChatModel[] = [
-  "nvidia/nemotron-3-ultra-550b-a55b",
-  "google/diffusiongemma-26b-a4b-it",
-  "meta/llama-3.1-70b-instruct",
-  "meta/llama-3.1-8b-instruct",
-  "mistralai/mistral-large",
-]
 
 export function getDefaultSystemPrompt(): string {
   return `You are Nexus AI, a helpful and knowledgeable AI assistant. You provide accurate, thoughtful, and well-reasoned responses. You support markdown formatting in your responses.`
