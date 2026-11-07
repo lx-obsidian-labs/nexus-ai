@@ -1,5 +1,7 @@
 # Nexus AI
 
+**Engineering verification:** [Documentation verification](DOCUMENTATION_VERIFICATION.md). This guide separates documented functionality from independently verified test and deployment evidence.
+
 **AI-oriented web application | LX Obsidian Labs**
 
 **Stage:** To confirm. **Verification:** Repository structure and package scripts inspected; feature behavior, tests and deployment have not been independently verified.
